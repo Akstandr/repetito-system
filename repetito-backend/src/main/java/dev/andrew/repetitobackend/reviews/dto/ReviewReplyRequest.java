@@ -1,0 +1,13 @@
+package dev.andrew.repetitobackend.reviews.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
+
+@Data
+public class ReviewReplyRequest {
+
+    @NotBlank
+    @Size(max = 2000)
+    private String text;
+}
