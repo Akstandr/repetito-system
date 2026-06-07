@@ -36,6 +36,9 @@ public interface TutorCardRepository extends JpaRepository<TutorCard, Long> {
     List<TutorCard> findByTutorAccountIdOrderByCreatedAtDesc(Long tutorAccountId);
 
     @EntityGraph(attributePaths = {"tutorAccount", "tutorAccount.user", "supportedGrades"})
+    List<TutorCard> findByTutorAccountIdAndIsActiveTrueOrderByCreatedAtDesc(Long tutorAccountId);
+
+    @EntityGraph(attributePaths = {"tutorAccount", "tutorAccount.user", "supportedGrades"})
     Optional<TutorCard> findByIdAndTutorAccountId(Long id, Long tutorAccountId);
 
     boolean existsByIdAndTutorAccountId(Long id, Long tutorAccountId);

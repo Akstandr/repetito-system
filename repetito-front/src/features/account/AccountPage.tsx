@@ -1373,7 +1373,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
 
     if (isLoading) {
         return (
-            <main className="min-h-screen bg-background px-4 py-10 text-foreground">
+            <main className="app-gradient-bg min-h-screen px-4 py-10 text-foreground">
                 <div className="mx-auto max-w-6xl rounded-2xl border border-border bg-card p-8 text-sm text-muted-foreground">
                     Загружаем кабинет...
                 </div>
@@ -1383,7 +1383,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
 
     if (!user) {
         return (
-            <main className="min-h-screen bg-background px-4 py-10 text-foreground">
+            <main className="app-gradient-bg min-h-screen px-4 py-10 text-foreground">
                 <section className="mx-auto max-w-3xl rounded-2xl border border-border bg-card p-8 text-center">
                     <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-secondary text-primary">
                         <UserRound size={22} />
@@ -1417,7 +1417,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
     };
 
     return (
-        <main className="min-h-screen bg-background text-foreground">
+        <main className="app-gradient-bg min-h-screen text-foreground">
             <AccountHeader
                 displayName={displayName}
                 activeAccountLabel={activeAccount ? accountLabel(activeAccount.type) : "Выберите аккаунт"}

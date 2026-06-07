@@ -221,7 +221,7 @@ export function LandingPage() {
 
   if (isSessionLoading && getCookieValue("auth_token")) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
+      <div className="app-gradient-bg flex min-h-screen items-center justify-center text-foreground">
         <div className="flex items-center gap-3 rounded-2xl border border-border bg-card px-6 py-4 shadow-sm">
           <Loader2 size={18} className="animate-spin text-primary" />
           <span className="text-sm text-muted-foreground">Загружаем кабинет...</span>
@@ -231,7 +231,7 @@ export function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="app-gradient-bg min-h-screen text-foreground">
       <header className="sticky top-0 z-30 border-b border-border bg-card/85 backdrop-blur-md">
         <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-2 px-3 py-2 sm:gap-4 sm:px-6 sm:py-0">
           <button

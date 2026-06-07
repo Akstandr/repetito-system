@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { LandingPage, TutorCardDetailsPage } from "../features/landing";
+import { LandingPage, PublicProfilePage, TutorCardDetailsPage } from "../features/landing";
 import { AccountPage } from "../features/account/AccountPage";
 
 function getCurrentPath() {
@@ -26,6 +26,16 @@ function getTutorCardId(path: string) {
   return Number.isFinite(cardId) ? cardId : null;
 }
 
+function getPublicProfileId(path: string) {
+  const match = path.match(/^\/profile\/(\d+)$/);
+  if (!match) {
+    return null;
+  }
+
+  const profileId = Number(match[1]);
+  return Number.isFinite(profileId) ? profileId : null;
+}
+
 export default function App() {
   const [path, setPath] = useState(getCurrentPath);
 
@@ -38,6 +48,11 @@ export default function App() {
 
     return () => window.removeEventListener("popstate", handleNavigation);
   }, []);
+
+  const publicProfileId = getPublicProfileId(path);
+  if (publicProfileId !== null) {
+    return <PublicProfilePage accountId={publicProfileId} />;
+  }
 
   if (
     path === "/account" ||

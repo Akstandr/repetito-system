@@ -17,7 +17,7 @@ export function AccountHeader({
   onMenuToggle?: () => void;
 }) {
   return (
-    <header className="border-b border-border bg-card/80 backdrop-blur-md">
+    <header className="sticky top-0 z-30 border-b border-border bg-card/85 backdrop-blur-md">
       <div className="mx-auto flex min-h-16 max-w-7xl flex-wrap items-center justify-between gap-2 px-3 py-2 sm:relative sm:flex-nowrap sm:gap-4 sm:px-6 sm:py-0">
         <div className="flex min-w-0 items-center gap-1">
           {onMenuToggle ? (

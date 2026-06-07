@@ -2,6 +2,7 @@ package dev.andrew.repetitobackend.accounts.controller;
 
 import dev.andrew.repetitobackend.accounts.dto.AccountResponse;
 import dev.andrew.repetitobackend.accounts.dto.CreateAccountRequest;
+import dev.andrew.repetitobackend.accounts.dto.PublicProfileResponse;
 import dev.andrew.repetitobackend.accounts.dto.StudentProfileRequest;
 import dev.andrew.repetitobackend.accounts.dto.TutorProfileRequest;
 import dev.andrew.repetitobackend.accounts.service.AccountService;
@@ -19,6 +20,11 @@ import org.springframework.web.bind.annotation.*;
 public class AccountController {
 
     private final AccountService accountService;
+
+    @GetMapping("/public/{accountId}")
+    public ResponseEntity<PublicProfileResponse> publicProfile(@PathVariable Long accountId) {
+        return ResponseEntity.ok(accountService.getPublicProfile(accountId));
+    }
 
     @PostMapping
     public ResponseEntity<AuthResponse> createAccount(

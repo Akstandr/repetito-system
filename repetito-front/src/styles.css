@@ -217,6 +217,40 @@
   }
 }
 
+.app-gradient-bg {
+  background:
+    linear-gradient(120deg, rgba(79, 70, 229, 0.12), transparent 34%),
+    linear-gradient(240deg, rgba(99, 102, 241, 0.14), transparent 38%),
+    linear-gradient(180deg, var(--background), #eef2ff 52%, var(--background));
+  background-size: 180% 180%;
+  animation: app-gradient-shift 18s ease-in-out infinite;
+}
+
+.dark .app-gradient-bg {
+  background:
+    linear-gradient(120deg, rgba(139, 140, 246, 0.18), transparent 36%),
+    linear-gradient(240deg, rgba(79, 70, 229, 0.16), transparent 40%),
+    linear-gradient(180deg, #171927, #20243a 54%, #171927);
+  background-size: 180% 180%;
+}
+
+@keyframes app-gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-gradient-bg {
+    animation: none;
+  }
+}
+
 .markdown-content h1,
 .markdown-content h2,
 .markdown-content h3 {

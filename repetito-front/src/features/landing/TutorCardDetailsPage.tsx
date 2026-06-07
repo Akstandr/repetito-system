@@ -286,7 +286,7 @@ export function TutorCardDetailsPage({ cardId }: { cardId: number }) {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="app-gradient-bg min-h-screen text-foreground">
       <header className="sticky top-0 z-30 border-b border-border bg-card/85 backdrop-blur-md">
         <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-2 px-3 py-2 sm:gap-4 sm:px-6 sm:py-0">
           <button
@@ -392,9 +392,13 @@ export function TutorCardDetailsPage({ cardId }: { cardId: number }) {
                     )}
                   </div>
                   <h1 className="text-2xl font-semibold leading-tight sm:text-4xl">{card.title}</h1>
-                  <p className="mt-3 text-base text-muted-foreground">
+                  <button
+                    type="button"
+                    onClick={() => navigateTo(`/profile/${card.tutor.id}`)}
+                    className="mt-3 text-left text-base text-muted-foreground transition hover:text-primary"
+                  >
                     {card.tutor.firstName} {card.tutor.lastName}
-                  </p>
+                  </button>
                   <p className="mt-6 whitespace-pre-line text-sm leading-7 text-muted-foreground sm:text-base">
                     {card.description || "Репетитор пока не добавил подробное описание карточки."}
                   </p>

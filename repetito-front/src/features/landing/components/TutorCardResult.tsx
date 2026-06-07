@@ -42,9 +42,17 @@ export function TutorCardResult({
       <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
         <div className="min-w-0">
           <h3 className="text-lg font-semibold">{card.title}</h3>
-          <div className="mt-1 text-sm text-muted-foreground">
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              window.history.pushState({}, "", `/profile/${card.tutor.id}`);
+              window.dispatchEvent(new PopStateEvent("popstate"));
+            }}
+            className="mt-1 text-left text-sm text-muted-foreground transition hover:text-primary"
+          >
             {card.tutor.firstName} {card.tutor.lastName}
-          </div>
+          </button>
         </div>
         <div className="rounded-full bg-secondary px-3 py-1 text-sm font-medium text-secondary-foreground">
           {card.pricePerLesson.toLocaleString("ru-RU")} ₽ / час

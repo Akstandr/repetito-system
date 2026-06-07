@@ -1,6 +1,9 @@
 package dev.andrew.repetitobackend.accounts.service;
 
 import dev.andrew.repetitobackend.accounts.dto.AccountResponse;
+import dev.andrew.repetitobackend.accounts.dto.PublicAccountResponse;
+import dev.andrew.repetitobackend.accounts.dto.PublicProfileResponse;
+import dev.andrew.repetitobackend.accounts.dto.PublicUserResponse;
 import dev.andrew.repetitobackend.accounts.dto.StudentProfileRequest;
 import dev.andrew.repetitobackend.accounts.dto.TutorProfileRequest;
 import dev.andrew.repetitobackend.accounts.model.Account;
@@ -15,10 +18,16 @@ import dev.andrew.repetitobackend.common.security.JwtService;
 import dev.andrew.repetitobackend.users.model.User;
 import dev.andrew.repetitobackend.users.repository.UserRepository;
 import dev.andrew.repetitobackend.users.dto.AuthResponse;
+import dev.andrew.repetitobackend.reviews.dto.ReviewResponse;
+import dev.andrew.repetitobackend.reviews.repository.TutorReviewRepository;
+import dev.andrew.repetitobackend.tutorcards.dto.TutorCardResponse;
+import dev.andrew.repetitobackend.tutorcards.repository.TutorCardRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -30,6 +39,8 @@ public class AccountService {
     private final TutorProfileRepository tutorProfileRepository;
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final TutorCardRepository tutorCardRepository;
+    private final TutorReviewRepository tutorReviewRepository;
 
     public List<AccountResponse> getAccounts(Long userId, Long activeAccountId) {
         return accountRepository.findByUserIdOrderByCreatedAtAsc(userId).stream()
@@ -45,6 +56,38 @@ public class AccountService {
         return accountRepository.findByIdAndUserId(activeAccountId, userId)
                 .map(account -> toResponse(account, true))
                 .orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public PublicProfileResponse getPublicProfile(Long accountId) {
+        Account requestedAccount = accountRepository.findById(accountId)
+                .orElseThrow(() -> new IllegalArgumentException("Profile not found"));
+        User user = requestedAccount.getUser();
+
+        List<Account> accounts = accountRepository.findByUserIdOrderByCreatedAtAsc(user.getId());
+        List<PublicAccountResponse> publicAccounts = accounts.stream()
+                .map(account -> PublicAccountResponse.from(
+                        account,
+                        studentProfileRepository.findByAccountId(account.getId()).orElse(null),
+                        tutorProfileRepository.findByAccountId(account.getId()).orElse(null)
+                ))
+                .toList();
+
+        List<TutorCardResponse> tutorCards = new ArrayList<>();
+        List<ReviewResponse> reviews = new ArrayList<>();
+        accounts.stream()
+                .filter(account -> account.getType() == AccountType.TUTOR)
+                .forEach(account -> {
+                    TutorProfile tutorProfile = tutorProfileRepository.findByAccountId(account.getId()).orElse(null);
+                    tutorCardRepository.findByTutorAccountIdAndIsActiveTrueOrderByCreatedAtDesc(account.getId()).stream()
+                            .map(card -> TutorCardResponse.from(card, tutorProfile))
+                            .forEach(tutorCards::add);
+                    tutorReviewRepository.findByTutorAccountIdOrderByCreatedAtDesc(account.getId()).stream()
+                            .map(ReviewResponse::from)
+                            .forEach(reviews::add);
+                });
+
+        return new PublicProfileResponse(PublicUserResponse.from(user), publicAccounts, tutorCards, reviews);
     }
 
     public Account createAccount(Long userId, AccountType type) {
