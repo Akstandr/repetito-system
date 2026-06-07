@@ -10,6 +10,7 @@ import {
   readErrorMessage,
 } from "../../shared/api";
 import type { SubjectOption } from "../../shared/api";
+import { ThemeToggle } from "../../shared/ThemeToggle";
 import { useAuthSession } from "../../shared/useAuthSession";
 import { ApplicationMessageDialog, GuestLanding, TutorDashboard, TutorSearchPanel, TutorSearchResults } from "./components";
 import type { TutorCardPageResponse } from "./types";
@@ -242,87 +243,91 @@ export function LandingPage() {
             Repetito.ru
           </button>
 
-          {session?.user ? (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => navigateTo("/account")}
-                className="max-w-[44vw] truncate rounded-full bg-secondary px-3 py-1.5 text-sm text-secondary-foreground transition hover:bg-secondary/80 sm:max-w-64"
-              >
-                {`${session.user.firstName || session.user.email}${session.user.lastName ? ` ${session.user.lastName}` : ""}`.trim()}
-              </button>
-              <button
-                type="button"
-                onClick={() => logout()}
-                aria-label="Выйти из аккаунта"
-                title="Выйти из аккаунта"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-              >
-                <LogOut size={17} />
-              </button>
-            </div>
-          ) : (
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setIsGuestMenuOpen((value) => !value)}
-                aria-label="Открыть меню авторизации"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border text-muted-foreground transition hover:bg-secondary hover:text-foreground sm:hidden"
-              >
-                {isGuestMenuOpen ? <X size={18} /> : <Menu size={18} />}
-              </button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
 
-            <div className="hidden items-center gap-2 sm:flex">
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode("login");
-                  setAuthOpen(true);
-                }}
-                className="rounded-xl px-4 py-2 text-sm transition hover:bg-secondary"
-              >
-                Войти
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode("register");
-                  setAuthOpen(true);
-                }}
-                className="rounded-xl bg-primary px-4 py-2 text-sm text-primary-foreground transition hover:bg-primary/90"
-              >
-                Регистрация
-              </button>
-            </div>
+            {session?.user ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => navigateTo("/account")}
+                  className="max-w-[34vw] truncate rounded-full bg-secondary px-3 py-1.5 text-sm text-secondary-foreground transition hover:bg-secondary/80 sm:max-w-64"
+                >
+                  {`${session.user.firstName || session.user.email}${session.user.lastName ? ` ${session.user.lastName}` : ""}`.trim()}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => logout()}
+                  aria-label="Выйти из аккаунта"
+                  title="Выйти из аккаунта"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+                >
+                  <LogOut size={17} />
+                </button>
+              </>
+            ) : (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsGuestMenuOpen((value) => !value)}
+                  aria-label="Открыть меню авторизации"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border text-muted-foreground transition hover:bg-secondary hover:text-foreground sm:hidden"
+                >
+                  {isGuestMenuOpen ? <X size={18} /> : <Menu size={18} />}
+                </button>
 
-              {isGuestMenuOpen && (
-                <div className="absolute right-0 top-12 z-40 w-48 rounded-2xl border border-border bg-card p-2 shadow-xl sm:hidden">
+                <div className="hidden items-center gap-2 sm:flex">
                   <button
                     type="button"
                     onClick={() => {
-                      setIsGuestMenuOpen(false);
                       setAuthMode("login");
                       setAuthOpen(true);
                     }}
-                    className="block w-full rounded-xl px-4 py-3 text-left text-sm transition hover:bg-secondary"
+                    className="rounded-xl px-4 py-2 text-sm transition hover:bg-secondary"
                   >
                     Войти
                   </button>
                   <button
                     type="button"
                     onClick={() => {
-                      setIsGuestMenuOpen(false);
                       setAuthMode("register");
                       setAuthOpen(true);
                     }}
-                    className="mt-1 block w-full rounded-xl bg-primary px-4 py-3 text-left text-sm text-primary-foreground transition hover:bg-primary/90"
+                    className="rounded-xl bg-primary px-4 py-2 text-sm text-primary-foreground transition hover:bg-primary/90"
                   >
                     Регистрация
                   </button>
                 </div>
-              )}
-            </div>
-          )}
+
+                {isGuestMenuOpen && (
+                  <div className="absolute right-0 top-12 z-40 w-48 rounded-2xl border border-border bg-card p-2 shadow-xl sm:hidden">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsGuestMenuOpen(false);
+                        setAuthMode("login");
+                        setAuthOpen(true);
+                      }}
+                      className="block w-full rounded-xl px-4 py-3 text-left text-sm transition hover:bg-secondary"
+                    >
+                      Войти
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsGuestMenuOpen(false);
+                        setAuthMode("register");
+                        setAuthOpen(true);
+                      }}
+                      className="mt-1 block w-full rounded-xl bg-primary px-4 py-3 text-left text-sm text-primary-foreground transition hover:bg-primary/90"
+                    >
+                      Регистрация
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </header>
 

@@ -1,4 +1,5 @@
 import { ArrowLeft, CheckCircle2, LogOut, Menu } from "lucide-react";
+import { ThemeToggle } from "../../../shared/ThemeToggle";
 
 export function AccountHeader({
   displayName,
@@ -47,10 +48,11 @@ export function AccountHeader({
         </div>
 
         <div className="flex min-w-0 items-center gap-2">
+          <ThemeToggle />
           <button
             type="button"
             onClick={onProfile}
-            className="max-w-[38vw] truncate rounded-full bg-secondary px-3 py-1.5 text-sm text-secondary-foreground transition hover:bg-secondary/80 sm:max-w-64"
+            className="max-w-[32vw] truncate rounded-full bg-secondary px-3 py-1.5 text-sm text-secondary-foreground transition hover:bg-secondary/80 sm:max-w-64"
           >
             {displayName}
           </button>

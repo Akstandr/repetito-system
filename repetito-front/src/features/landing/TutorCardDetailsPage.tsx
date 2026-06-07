@@ -10,6 +10,7 @@ import {
 } from "../../shared/api";
 import type { SubjectOption } from "../../shared/api";
 import { markdownToSafeHtml } from "../../shared/markdown";
+import { ThemeToggle } from "../../shared/ThemeToggle";
 import { useAuthSession } from "../../shared/useAuthSession";
 import { ApplicationMessageDialog } from "./components";
 import type { TutorCard, TutorReview } from "./types";
@@ -297,49 +298,53 @@ export function TutorCardDetailsPage({ cardId }: { cardId: number }) {
             Repetito.ru
           </button>
 
-          {session?.user ? (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => navigateTo("/account")}
-                className="max-w-[44vw] truncate rounded-full bg-secondary px-3 py-1.5 text-sm text-secondary-foreground transition hover:bg-secondary/80 sm:max-w-64"
-              >
-                {`${session.user.firstName || session.user.email}${session.user.lastName ? ` ${session.user.lastName}` : ""}`.trim()}
-              </button>
-              <button
-                type="button"
-                onClick={() => logout()}
-                aria-label="Выйти из аккаунта"
-                title="Выйти из аккаунта"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-              >
-                <LogOut size={17} />
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode("login");
-                  setAuthOpen(true);
-                }}
-                className="rounded-xl px-4 py-2 text-sm transition hover:bg-secondary"
-              >
-                Войти
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode("register");
-                  setAuthOpen(true);
-                }}
-                className="rounded-xl bg-primary px-4 py-2 text-sm text-primary-foreground transition hover:bg-primary/90"
-              >
-                Регистрация
-              </button>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+
+            {session?.user ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => navigateTo("/account")}
+                  className="max-w-[34vw] truncate rounded-full bg-secondary px-3 py-1.5 text-sm text-secondary-foreground transition hover:bg-secondary/80 sm:max-w-64"
+                >
+                  {`${session.user.firstName || session.user.email}${session.user.lastName ? ` ${session.user.lastName}` : ""}`.trim()}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => logout()}
+                  aria-label="Выйти из аккаунта"
+                  title="Выйти из аккаунта"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+                >
+                  <LogOut size={17} />
+                </button>
+              </>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode("login");
+                    setAuthOpen(true);
+                  }}
+                  className="hidden rounded-xl px-4 py-2 text-sm transition hover:bg-secondary sm:inline-flex"
+                >
+                  Войти
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode("register");
+                    setAuthOpen(true);
+                  }}
+                  className="rounded-xl bg-primary px-3 py-2 text-sm text-primary-foreground transition hover:bg-primary/90 sm:px-4"
+                >
+                  Регистрация
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
