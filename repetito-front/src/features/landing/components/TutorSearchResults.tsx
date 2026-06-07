@@ -32,7 +32,7 @@ export function TutorSearchResults({
 }) {
   return (
     <div className="mt-8">
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold">Результаты поиска</h2>
           {hasSearched ? (
@@ -56,15 +56,15 @@ export function TutorSearchResults({
       )}
 
       {!hasSearched ? (
-        <div className="rounded-2xl border border-dashed border-border bg-background p-8 text-sm text-muted-foreground">
+        <div className="rounded-2xl border border-dashed border-border bg-background p-5 text-sm text-muted-foreground sm:p-8">
           Выберите предмет и класс, затем нажмите «Найти репетитора», чтобы увидеть карточки.
         </div>
       ) : isLoading ? (
-        <div className="rounded-2xl border border-border bg-background p-8 text-sm text-muted-foreground">
+        <div className="rounded-2xl border border-border bg-background p-5 text-sm text-muted-foreground sm:p-8">
           Загрузка карточек...
         </div>
       ) : cards.items.length === 0 ? (
-        <div className="rounded-2xl border border-border bg-background p-8 text-sm text-muted-foreground">
+        <div className="rounded-2xl border border-border bg-background p-5 text-sm text-muted-foreground sm:p-8">
           Репетиторы не найдены
         </div>
       ) : (
@@ -83,7 +83,7 @@ export function TutorSearchResults({
             ))}
           </div>
 
-          <div className="mt-6 flex items-center justify-center gap-2">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
             <button
               type="button"
               disabled={cards.page <= 1 || isLoading}

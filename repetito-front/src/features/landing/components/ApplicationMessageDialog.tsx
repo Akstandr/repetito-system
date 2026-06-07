@@ -31,9 +31,9 @@ export function ApplicationMessageDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 px-4 py-6">
-      <div className="w-full max-w-xl rounded-[28px] border border-border bg-card p-6 shadow-xl">
+      <div className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-[24px] border border-border bg-card p-4 shadow-xl sm:rounded-[28px] sm:p-6">
         <div className="mb-4">
-          <h2 className="text-2xl font-semibold">Сопроводительное письмо</h2>
+          <h2 className="text-xl font-semibold sm:text-2xl">Сопроводительное письмо</h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             Расскажите {tutorName ? `репетитору ${tutorName}` : "репетитору"} о цели занятий, текущем уровне и удобном формате обучения.
           </p>

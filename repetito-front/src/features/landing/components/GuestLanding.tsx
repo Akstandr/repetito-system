@@ -59,8 +59,8 @@ export function GuestLanding({
   onRegister: () => void;
 }) {
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12">
-      <section className="rounded-[28px] border border-border bg-card p-6 shadow-sm sm:p-8 lg:p-10">
+    <main className="mx-auto max-w-7xl px-3 py-6 sm:px-6 lg:py-12">
+      <section className="rounded-[24px] border border-border bg-card p-4 shadow-sm sm:rounded-[28px] sm:p-8 lg:p-10">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
           <div className="space-y-6">
             <div className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground">
@@ -69,7 +69,7 @@ export function GuestLanding({
             </div>
 
             <div className="space-y-4">
-              <h1 className="max-w-4xl text-4xl font-semibold leading-tight sm:text-5xl">
+              <h1 className="max-w-4xl text-3xl font-semibold leading-tight sm:text-5xl">
                 Найдите репетитора для <span className="text-primary">достижения ваших учебных целей</span>
               </h1>
               <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
@@ -77,7 +77,7 @@ export function GuestLanding({
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-3 rounded-3xl border border-border bg-secondary/40 p-3 sm:inline-flex">
+            <div className="flex flex-col gap-3 rounded-3xl border border-border bg-secondary/40 p-3 sm:inline-flex sm:flex-row">
               <button
                 type="button"
                 onClick={onLogin}
@@ -127,7 +127,7 @@ export function GuestLanding({
         </div>
       </section>
 
-      <section className="mt-6 rounded-[28px] border border-border bg-card p-6 shadow-sm sm:p-8">
+      <section className="mt-6 rounded-[24px] border border-border bg-card p-4 shadow-sm sm:rounded-[28px] sm:p-8">
         <div className="mb-6 max-w-3xl">
           <h2 className="text-2xl font-semibold sm:text-3xl">Как это работает</h2>
           <p className="mt-2 text-sm leading-7 text-muted-foreground sm:text-base">

@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState } from "react";
-import { GraduationCap, Loader2, LogOut } from "lucide-react";
+import { GraduationCap, Loader2, LogOut, Menu, X } from "lucide-react";
 import { AuthModal } from "../auth/AuthModal";
 import {
   DEFAULT_SUBJECT_OPTIONS,
@@ -45,6 +45,7 @@ function formatError(error: unknown, fallback: string) {
 export function LandingPage() {
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>("login");
+  const [isGuestMenuOpen, setIsGuestMenuOpen] = useState(false);
   const { session, logout, isLoading: isSessionLoading } = useAuthSession();
   const [subjectOptions, setSubjectOptions] = useState<SubjectOption[]>(DEFAULT_SUBJECT_OPTIONS);
   const [subject, setSubject] = useState("");
@@ -90,6 +91,12 @@ export function LandingPage() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (session?.user) {
+      setIsGuestMenuOpen(false);
+    }
+  }, [session?.user]);
 
   async function searchCards(nextPage = page) {
     setHasSearched(true);
@@ -225,7 +232,7 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b border-border bg-card/85 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
+        <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-2 px-3 py-2 sm:gap-4 sm:px-6 sm:py-0">
           <button
             type="button"
             onClick={() => navigateTo("/")}
@@ -240,7 +247,7 @@ export function LandingPage() {
               <button
                 type="button"
                 onClick={() => navigateTo("/account")}
-                className="rounded-full bg-secondary px-3 py-1.5 text-sm text-secondary-foreground transition hover:bg-secondary/80"
+                className="max-w-[44vw] truncate rounded-full bg-secondary px-3 py-1.5 text-sm text-secondary-foreground transition hover:bg-secondary/80 sm:max-w-64"
               >
                 {`${session.user.firstName || session.user.email}${session.user.lastName ? ` ${session.user.lastName}` : ""}`.trim()}
               </button>
@@ -255,7 +262,17 @@ export function LandingPage() {
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsGuestMenuOpen((value) => !value)}
+                aria-label="Открыть меню авторизации"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border text-muted-foreground transition hover:bg-secondary hover:text-foreground sm:hidden"
+              >
+                {isGuestMenuOpen ? <X size={18} /> : <Menu size={18} />}
+              </button>
+
+            <div className="hidden items-center gap-2 sm:flex">
               <button
                 type="button"
                 onClick={() => {
@@ -277,6 +294,34 @@ export function LandingPage() {
                 Регистрация
               </button>
             </div>
+
+              {isGuestMenuOpen && (
+                <div className="absolute right-0 top-12 z-40 w-48 rounded-2xl border border-border bg-card p-2 shadow-xl sm:hidden">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsGuestMenuOpen(false);
+                      setAuthMode("login");
+                      setAuthOpen(true);
+                    }}
+                    className="block w-full rounded-xl px-4 py-3 text-left text-sm transition hover:bg-secondary"
+                  >
+                    Войти
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsGuestMenuOpen(false);
+                      setAuthMode("register");
+                      setAuthOpen(true);
+                    }}
+                    className="mt-1 block w-full rounded-xl bg-primary px-4 py-3 text-left text-sm text-primary-foreground transition hover:bg-primary/90"
+                  >
+                    Регистрация
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </header>
@@ -295,8 +340,8 @@ export function LandingPage() {
       ) : showTutorDashboard ? (
         <TutorDashboard userLabel={userLabel} activeAccountId={activeAccount.id} />
       ) : showAccountSelectionNotice ? (
-        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12">
-          <section className="rounded-[28px] border border-border bg-card p-6 shadow-sm sm:p-8">
+        <main className="mx-auto max-w-7xl px-3 py-6 sm:px-6 lg:py-12">
+          <section className="rounded-[24px] border border-border bg-card p-4 shadow-sm sm:rounded-[28px] sm:p-8">
             <div className="max-w-3xl space-y-4">
               <div className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground">
                 <GraduationCap size={13} />
@@ -318,8 +363,8 @@ export function LandingPage() {
           </section>
         </main>
       ) : (
-        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12">
-          <section className="overflow-hidden rounded-[28px] border border-border bg-card p-6 shadow-sm">
+        <main className="mx-auto max-w-7xl px-3 py-6 sm:px-6 lg:py-12">
+          <section className="overflow-hidden rounded-[24px] border border-border bg-card p-4 shadow-sm sm:rounded-[28px] sm:p-6">
             <TutorSearchPanel
               subject={subject}
               setSubject={setSubject}

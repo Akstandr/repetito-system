@@ -205,8 +205,8 @@ export function TutorDashboard({
   ];
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12">
-        <section className="overflow-hidden rounded-[28px] border border-border bg-card p-6 shadow-sm lg:p-8">
+    <main className="mx-auto max-w-7xl px-3 py-6 sm:px-6 lg:py-12">
+        <section className="overflow-hidden rounded-[24px] border border-border bg-card p-4 shadow-sm sm:rounded-[28px] sm:p-6 lg:p-8">
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
             <div className="space-y-6">
               <div className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground">
@@ -215,7 +215,7 @@ export function TutorDashboard({
               </div>
 
               <div>
-                <h1 className="text-4xl font-semibold leading-tight">
+                <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
                   Здравствуйте, <span className="text-primary">{userLabel}</span>
                 </h1>
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
@@ -256,7 +256,7 @@ export function TutorDashboard({
                     key={action.title}
                     type="button"
                     onClick={() => navigateTo(action.href)}
-                    className="group rounded-3xl border border-border bg-card p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:bg-secondary/40 hover:shadow-md"
+                    className="group rounded-3xl border border-border bg-card p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:bg-secondary/40 hover:shadow-md sm:p-5"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground">

@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import {
+    ArrowLeft,
     BookOpen,
     Calendar,
     Check,
@@ -480,6 +481,8 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
     const [error, setError] = useState<string | null>(null);
     const [activeSection, setActiveSection] = useState<SectionKey>("profile");
     const [isProfileEditing, setIsProfileEditing] = useState(false);
+    const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+    const [isMobileNavVisible, setIsMobileNavVisible] = useState(false);
     const [subjectOptions, setSubjectOptions] = useState<SubjectOption[]>(DEFAULT_SUBJECT_OPTIONS);
 
     const [studentProfile, setStudentProfile] = useState<StudentProfileForm>(emptyStudentProfile);
@@ -559,6 +562,16 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
         });
     }, [activeAccount?.type, lessonFilter, lessonStudentFilter, lessons]);
 
+    function openMobileNav() {
+        setIsMobileNavOpen(true);
+        window.requestAnimationFrame(() => setIsMobileNavVisible(true));
+    }
+
+    function closeMobileNav() {
+        setIsMobileNavVisible(false);
+        window.setTimeout(() => setIsMobileNavOpen(false), 220);
+    }
+
     const navItems = useMemo(() => {
         const items: Array<{ key: SectionKey; label: string; icon: typeof UserRound; badge?: number }> = [
             { key: "profile", label: "Профиль", icon: UserRound },
@@ -629,6 +642,8 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
         setIsCardFormOpen(false);
         setEditingLessonId(null);
         setIsProfileEditing(false);
+        setIsMobileNavOpen(false);
+        setIsMobileNavVisible(false);
         setActiveSection("profile");
     }, [activeAccount?.id]);
 
@@ -676,7 +691,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             void loadTutorStudents();
         }
         if (activeSection === "messages") {
-            void loadConversations();
+            void loadConversations({ preserveSelection: true });
         }
         if (activeSection === "lessons") {
             void loadLessons();
@@ -1218,7 +1233,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                 throw new Error(await readErrorMessage(response, "Не удалось загрузить сообщения"));
             }
             setMessages((await response.json()) as MessageView[]);
-            await loadConversations();
+            await loadConversations({ preserveSelection: true });
         } catch (loadError) {
             setError(loadError instanceof Error ? loadError.message : "Не удалось загрузить сообщения");
         }
@@ -1242,7 +1257,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             const sent = (await response.json()) as MessageView;
             setMessages((current) => [...current, sent]);
             setMessageDraft(emptyMessage());
-            await loadConversations();
+            await loadConversations({ preserveSelection: true });
         } catch (sendError) {
             setError(sendError instanceof Error ? sendError.message : "Не удалось отправить сообщение");
         } finally {
@@ -1393,6 +1408,13 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
     const isTutor = activeAccount?.type === "tutor";
 
     const acceptedApplications = applications.filter((application) => application.status === "ACCEPTED");
+    const selectedConversation =
+        conversations.find((conversation) => conversation.id === selectedConversationId) ?? null;
+    const navigateAccountSection = (key: SectionKey) => {
+        setActiveSection(key);
+        closeMobileNav();
+        navigateTo(routeForSection(key));
+    };
 
     return (
         <main className="min-h-screen bg-background text-foreground">
@@ -1402,24 +1424,49 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                 onBack={() => navigateTo("/")}
                 onProfile={() => {
                     setActiveSection("profile");
+                    closeMobileNav();
                     navigateTo("/profile");
                 }}
                 onLogout={() => logout()}
+                onMenuToggle={openMobileNav}
             />
 
-            <section className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[260px_minmax(0,1fr)]">
-                <AccountSidebar
-                    displayName={displayName}
-                    userEmail={user.email}
-                    navItems={navItems}
-                    activeSection={activeSection}
-                    onNavigate={(key) => {
-                        setActiveSection(key as SectionKey);
-                        navigateTo(routeForSection(key as SectionKey));
-                    }}
-                />
+            {isMobileNavOpen && (
+                <div className="fixed inset-0 z-40 lg:hidden">
+                    <button
+                        type="button"
+                        aria-label="Закрыть меню"
+                        onClick={closeMobileNav}
+                        className={`absolute inset-0 bg-foreground/30 transition-opacity duration-200 ease-out ${isMobileNavVisible ? "opacity-100" : "opacity-0"
+                            }`}
+                    />
+                    <div
+                        className={`absolute left-0 top-0 h-full w-[min(86vw,320px)] overflow-y-auto bg-background p-3 shadow-2xl transition-transform duration-200 ease-out ${isMobileNavVisible ? "translate-x-0" : "-translate-x-full"
+                            }`}
+                    >
+                        <AccountSidebar
+                            displayName={displayName}
+                            userEmail={user.email}
+                            navItems={navItems}
+                            activeSection={activeSection}
+                            onNavigate={(key) => navigateAccountSection(key as SectionKey)}
+                        />
+                    </div>
+                </div>
+            )}
 
-                <div className="space-y-6">
+            <section className="mx-auto grid w-full max-w-7xl gap-4 px-3 py-4 sm:px-6 sm:py-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-6">
+                <div className="hidden lg:block">
+                    <AccountSidebar
+                        displayName={displayName}
+                        userEmail={user.email}
+                        navItems={navItems}
+                        activeSection={activeSection}
+                        onNavigate={(key) => navigateAccountSection(key as SectionKey)}
+                    />
+                </div>
+
+                <div className="min-w-0 space-y-4 sm:space-y-6">
                     {error && <div className="rounded-2xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">{error}</div>}
 
                     {!activeAccount && accounts.length === 0 && (
@@ -1526,221 +1573,221 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                             </div>
 
                             <fieldset disabled={!isProfileEditing || isBusy} className={!isProfileEditing ? "opacity-80" : ""}>
-                            {activeAccount.type === "student" ? (
-                                <div className="grid gap-4 md:grid-cols-2">
-                                    <label className="block md:col-span-2">
-                                        <span className="text-sm text-muted-foreground">Описание</span>
-                                        <textarea
-                                            value={studentProfile.description}
-                                            onChange={(event) => setStudentProfile((current) => ({ ...current, description: event.target.value }))}
-                                            className="mt-1 min-h-28 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
-                                        />
-                                    </label>
-                                    <label className="block">
-                                        <span className="text-sm text-muted-foreground">Интересующие предметы</span>
-                                        <input
-                                            value={studentProfile.subjects}
-                                            onChange={(event) => setStudentProfile((current) => ({ ...current, subjects: event.target.value }))}
-                                            className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
-                                        />
-                                    </label>
-                                    <label className="block">
-                                        <span className="text-sm text-muted-foreground">Класс / курс</span>
-                                        <input
-                                            value={studentProfile.gradeLevel}
-                                            onChange={(event) => setStudentProfile((current) => ({ ...current, gradeLevel: event.target.value }))}
-                                            className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
-                                        />
-                                    </label>
-                                    <label className="block md:col-span-2">
-                                        <span className="text-sm text-muted-foreground">Формат занятий</span>
-                                        <input
-                                            value={studentProfile.format}
-                                            onChange={(event) => setStudentProfile((current) => ({ ...current, format: event.target.value }))}
-                                            className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
-                                        />
-                                    </label>
-                                </div>
-                            ) : (
-                                <div className="grid gap-4 md:grid-cols-2">
-                                    {isProfileEditing ? (
-                                        <>
-                                            <label className="block md:col-span-2">
-                                                <span className="text-sm text-muted-foreground">Обо мне</span>
-                                                <textarea
-                                                    maxLength={4000}
-                                                    value={tutorProfile.description}
-                                                    onChange={(event) => setTutorProfile((current) => ({ ...current, description: event.target.value }))}
-                                                    placeholder="Расскажите, кто вы, как проводите занятия и чем можете быть полезны ученику. Можно использовать Markdown: **жирный текст**, *курсив*, списки."
-                                                    className="mt-1 min-h-52 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
-                                                />
-                                                <span className="mt-1 block text-xs text-muted-foreground">
-                                                    Markdown поддерживается. {tutorProfile.description.length} / 4000 символов
-                                                </span>
-                                            </label>
-                                            {tutorProfile.description.trim() && (
-                                                <div className="md:col-span-2 rounded-2xl border border-border bg-secondary/60 p-4">
-                                                    <div className="mb-2 text-sm text-muted-foreground">Предпросмотр описания</div>
+                                {activeAccount.type === "student" ? (
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <label className="block md:col-span-2">
+                                            <span className="text-sm text-muted-foreground">Описание</span>
+                                            <textarea
+                                                value={studentProfile.description}
+                                                onChange={(event) => setStudentProfile((current) => ({ ...current, description: event.target.value }))}
+                                                className="mt-1 min-h-28 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
+                                            />
+                                        </label>
+                                        <label className="block">
+                                            <span className="text-sm text-muted-foreground">Интересующие предметы</span>
+                                            <input
+                                                value={studentProfile.subjects}
+                                                onChange={(event) => setStudentProfile((current) => ({ ...current, subjects: event.target.value }))}
+                                                className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
+                                            />
+                                        </label>
+                                        <label className="block">
+                                            <span className="text-sm text-muted-foreground">Класс / курс</span>
+                                            <input
+                                                value={studentProfile.gradeLevel}
+                                                onChange={(event) => setStudentProfile((current) => ({ ...current, gradeLevel: event.target.value }))}
+                                                className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
+                                            />
+                                        </label>
+                                        <label className="block md:col-span-2">
+                                            <span className="text-sm text-muted-foreground">Формат занятий</span>
+                                            <input
+                                                value={studentProfile.format}
+                                                onChange={(event) => setStudentProfile((current) => ({ ...current, format: event.target.value }))}
+                                                className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
+                                            />
+                                        </label>
+                                    </div>
+                                ) : (
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        {isProfileEditing ? (
+                                            <>
+                                                <label className="block md:col-span-2">
+                                                    <span className="text-sm text-muted-foreground">Обо мне</span>
+                                                    <textarea
+                                                        maxLength={4000}
+                                                        value={tutorProfile.description}
+                                                        onChange={(event) => setTutorProfile((current) => ({ ...current, description: event.target.value }))}
+                                                        placeholder="Расскажите, кто вы, как проводите занятия и чем можете быть полезны ученику. Можно использовать Markdown: **жирный текст**, *курсив*, списки."
+                                                        className="mt-1 min-h-52 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
+                                                    />
+                                                    <span className="mt-1 block text-xs text-muted-foreground">
+                                                        Markdown поддерживается. {tutorProfile.description.length} / 4000 символов
+                                                    </span>
+                                                </label>
+                                                {tutorProfile.description.trim() && (
+                                                    <div className="md:col-span-2 rounded-2xl border border-border bg-secondary/60 p-4">
+                                                        <div className="mb-2 text-sm text-muted-foreground">Предпросмотр описания</div>
+                                                        <div
+                                                            className="markdown-content text-sm leading-7 text-foreground"
+                                                            dangerouslySetInnerHTML={{ __html: markdownToSafeHtml(tutorProfile.description) }}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <div className="md:col-span-2 rounded-2xl border border-border bg-secondary/60 p-4">
+                                                <div className="mb-2 text-sm text-muted-foreground">Обо мне</div>
+                                                {tutorProfile.description.trim() ? (
                                                     <div
                                                         className="markdown-content text-sm leading-7 text-foreground"
                                                         dangerouslySetInnerHTML={{ __html: markdownToSafeHtml(tutorProfile.description) }}
                                                     />
-                                                </div>
-                                            )}
-                                        </>
-                                    ) : (
-                                        <div className="md:col-span-2 rounded-2xl border border-border bg-secondary/60 p-4">
-                                            <div className="mb-2 text-sm text-muted-foreground">Обо мне</div>
-                                            {tutorProfile.description.trim() ? (
-                                                <div
-                                                    className="markdown-content text-sm leading-7 text-foreground"
-                                                    dangerouslySetInnerHTML={{ __html: markdownToSafeHtml(tutorProfile.description) }}
-                                                />
-                                            ) : (
-                                                <div className="text-sm text-muted-foreground">Описание пока не заполнено.</div>
-                                            )}
-                                        </div>
-                                    )}
-                                    <label className="block">
-                                        <span className="text-sm text-muted-foreground">Предметы</span>
-                                        <input
-                                            value={tutorProfile.subjects}
-                                            onChange={(event) => setTutorProfile((current) => ({ ...current, subjects: event.target.value }))}
-                                            className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
-                                        />
-                                    </label>
-                                    <label className="block">
-                                        <span className="text-sm text-muted-foreground">Опыт преподавания, лет</span>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="1"
-                                            value={tutorProfile.experience}
-                                            onChange={(event) => setTutorProfile((current) => ({ ...current, experience: event.target.value }))}
-                                            className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
-                                        />
-                                    </label>
-                                    <label className="block">
-                                        <span className="text-sm text-muted-foreground">Стоимость занятия</span>
-                                        <input
-                                            value={tutorProfile.price}
-                                            onChange={(event) => setTutorProfile((current) => ({ ...current, price: event.target.value }))}
-                                            className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
-                                        />
-                                    </label>
-                                    <div className="md:col-span-2">
-                                        <div className="mb-3 flex items-center justify-between gap-3">
-                                            <div>
-                                                <div className="text-sm text-muted-foreground">Образование</div>
-                                                <div className="text-xs text-muted-foreground">
-                                                    Можно добавить несколько учебных заведений. Все поля необязательные.
-                                                </div>
+                                                ) : (
+                                                    <div className="text-sm text-muted-foreground">Описание пока не заполнено.</div>
+                                                )}
                                             </div>
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    setTutorProfile((current) => ({
-                                                        ...current,
-                                                        educationItems: [...current.educationItems, emptyTutorEducation()],
-                                                    }))
-                                                }
-                                                className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm transition hover:bg-secondary"
-                                            >
-                                                <Plus size={15} />
-                                                Добавить образование
-                                            </button>
-                                        </div>
-                                        <div className="space-y-3">
-                                            {tutorProfile.educationItems.map((education, index) => (
-                                                <div key={index} className="rounded-2xl border border-border bg-secondary/40 p-4">
-                                                    <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_140px_auto]">
-                                                        <label className="block">
-                                                            <span className="text-xs text-muted-foreground">Учебное заведение</span>
-                                                            <input
-                                                                value={education.institution}
-                                                                onChange={(event) =>
-                                                                    setTutorProfile((current) => ({
-                                                                        ...current,
-                                                                        educationItems: current.educationItems.map((item, itemIndex) =>
-                                                                            itemIndex === index ? { ...item, institution: event.target.value } : item,
-                                                                        ),
-                                                                    }))
-                                                                }
-                                                                className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
-                                                            />
-                                                        </label>
-                                                        <label className="block">
-                                                            <span className="text-xs text-muted-foreground">Специальность</span>
-                                                            <input
-                                                                value={education.specialty}
-                                                                onChange={(event) =>
-                                                                    setTutorProfile((current) => ({
-                                                                        ...current,
-                                                                        educationItems: current.educationItems.map((item, itemIndex) =>
-                                                                            itemIndex === index ? { ...item, specialty: event.target.value } : item,
-                                                                        ),
-                                                                    }))
-                                                                }
-                                                                className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
-                                                            />
-                                                        </label>
-                                                        <label className="block">
-                                                            <span className="text-xs text-muted-foreground">Год окончания</span>
-                                                            <input
-                                                                value={education.graduationYear}
-                                                                onChange={(event) =>
-                                                                    setTutorProfile((current) => ({
-                                                                        ...current,
-                                                                        educationItems: current.educationItems.map((item, itemIndex) =>
-                                                                            itemIndex === index ? { ...item, graduationYear: event.target.value } : item,
-                                                                        ),
-                                                                    }))
-                                                                }
-                                                                className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
-                                                            />
-                                                        </label>
-                                                        <button
-                                                            type="button"
-                                                            disabled={tutorProfile.educationItems.length === 1}
-                                                            onClick={() =>
-                                                                setTutorProfile((current) => ({
-                                                                    ...current,
-                                                                    educationItems: current.educationItems.filter((_, itemIndex) => itemIndex !== index),
-                                                                }))
-                                                            }
-                                                            className="mt-5 inline-flex h-12 items-center justify-center rounded-xl border border-border px-3 text-sm text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-40"
-                                                        >
-                                                            <Trash2 size={15} />
-                                                        </button>
+                                        )}
+                                        <label className="block">
+                                            <span className="text-sm text-muted-foreground">Предметы</span>
+                                            <input
+                                                value={tutorProfile.subjects}
+                                                onChange={(event) => setTutorProfile((current) => ({ ...current, subjects: event.target.value }))}
+                                                className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
+                                            />
+                                        </label>
+                                        <label className="block">
+                                            <span className="text-sm text-muted-foreground">Опыт преподавания, лет</span>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="1"
+                                                value={tutorProfile.experience}
+                                                onChange={(event) => setTutorProfile((current) => ({ ...current, experience: event.target.value }))}
+                                                className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
+                                            />
+                                        </label>
+                                        <label className="block">
+                                            <span className="text-sm text-muted-foreground">Стоимость занятия</span>
+                                            <input
+                                                value={tutorProfile.price}
+                                                onChange={(event) => setTutorProfile((current) => ({ ...current, price: event.target.value }))}
+                                                className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
+                                            />
+                                        </label>
+                                        <div className="md:col-span-2">
+                                            <div className="mb-3 flex items-center justify-between gap-3">
+                                                <div>
+                                                    <div className="text-sm text-muted-foreground">Образование</div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        Можно добавить несколько учебных заведений. Все поля необязательные.
                                                     </div>
                                                 </div>
-                                            ))}
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setTutorProfile((current) => ({
+                                                            ...current,
+                                                            educationItems: [...current.educationItems, emptyTutorEducation()],
+                                                        }))
+                                                    }
+                                                    className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm transition hover:bg-secondary"
+                                                >
+                                                    <Plus size={15} />
+                                                    Добавить образование
+                                                </button>
+                                            </div>
+                                            <div className="space-y-3">
+                                                {tutorProfile.educationItems.map((education, index) => (
+                                                    <div key={index} className="rounded-2xl border border-border bg-secondary/40 p-4">
+                                                        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_140px_auto]">
+                                                            <label className="block">
+                                                                <span className="text-xs text-muted-foreground">Учебное заведение</span>
+                                                                <input
+                                                                    value={education.institution}
+                                                                    onChange={(event) =>
+                                                                        setTutorProfile((current) => ({
+                                                                            ...current,
+                                                                            educationItems: current.educationItems.map((item, itemIndex) =>
+                                                                                itemIndex === index ? { ...item, institution: event.target.value } : item,
+                                                                            ),
+                                                                        }))
+                                                                    }
+                                                                    className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
+                                                                />
+                                                            </label>
+                                                            <label className="block">
+                                                                <span className="text-xs text-muted-foreground">Специальность</span>
+                                                                <input
+                                                                    value={education.specialty}
+                                                                    onChange={(event) =>
+                                                                        setTutorProfile((current) => ({
+                                                                            ...current,
+                                                                            educationItems: current.educationItems.map((item, itemIndex) =>
+                                                                                itemIndex === index ? { ...item, specialty: event.target.value } : item,
+                                                                            ),
+                                                                        }))
+                                                                    }
+                                                                    className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
+                                                                />
+                                                            </label>
+                                                            <label className="block">
+                                                                <span className="text-xs text-muted-foreground">Год окончания</span>
+                                                                <input
+                                                                    value={education.graduationYear}
+                                                                    onChange={(event) =>
+                                                                        setTutorProfile((current) => ({
+                                                                            ...current,
+                                                                            educationItems: current.educationItems.map((item, itemIndex) =>
+                                                                                itemIndex === index ? { ...item, graduationYear: event.target.value } : item,
+                                                                            ),
+                                                                        }))
+                                                                    }
+                                                                    className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
+                                                                />
+                                                            </label>
+                                                            <button
+                                                                type="button"
+                                                                disabled={tutorProfile.educationItems.length === 1}
+                                                                onClick={() =>
+                                                                    setTutorProfile((current) => ({
+                                                                        ...current,
+                                                                        educationItems: current.educationItems.filter((_, itemIndex) => itemIndex !== index),
+                                                                    }))
+                                                                }
+                                                                className="mt-5 inline-flex h-12 items-center justify-center rounded-xl border border-border px-3 text-sm text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-40"
+                                                            >
+                                                                <Trash2 size={15} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
+                                        <label className="block md:col-span-2">
+                                            <span className="text-sm text-muted-foreground">Достижения</span>
+                                            <textarea
+                                                value={tutorProfile.achievements}
+                                                onChange={(event) => setTutorProfile((current) => ({ ...current, achievements: event.target.value }))}
+                                                className="mt-1 min-h-28 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
+                                            />
+                                        </label>
                                     </div>
-                                    <label className="block md:col-span-2">
-                                        <span className="text-sm text-muted-foreground">Достижения</span>
-                                        <textarea
-                                            value={tutorProfile.achievements}
-                                            onChange={(event) => setTutorProfile((current) => ({ ...current, achievements: event.target.value }))}
-                                            className="mt-1 min-h-28 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
-                                        />
-                                    </label>
-                                </div>
-                            )}
+                                )}
                             </fieldset>
 
                             {isProfileEditing && (
-                            <div className="mt-6 flex flex-wrap gap-3">
-                                <button
-                                    type="button"
-                                    onClick={activeAccount.type === "student" ? saveStudentProfile : saveTutorProfile}
-                                    disabled={isBusy}
-                                    className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    <Save size={16} />
-                                    Сохранить профиль
-                                </button>
-                            </div>
+                                <div className="mt-6 flex flex-wrap gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={activeAccount.type === "student" ? saveStudentProfile : saveTutorProfile}
+                                        disabled={isBusy}
+                                        className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        <Save size={16} />
+                                        Сохранить профиль
+                                    </button>
+                                </div>
                             )}
                         </section>
                     )}
@@ -1833,105 +1880,105 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                 </div>
 
                                 {isCardFormOpen && (
-                                <div className="rounded-2xl border border-border bg-card p-5">
-                                    <h3 className="mb-4 text-lg font-semibold">
-                                        {editingCardId ? "Редактирование карточки" : "Новая карточка"}
-                                    </h3>
+                                    <div className="rounded-2xl border border-border bg-card p-5">
+                                        <h3 className="mb-4 text-lg font-semibold">
+                                            {editingCardId ? "Редактирование карточки" : "Новая карточка"}
+                                        </h3>
 
-                                    <div className="space-y-4">
-                                        <label className="block">
-                                            <span className="text-sm text-muted-foreground">Название</span>
-                                            <input
-                                                value={cardDraft.title}
-                                                onChange={(event) => setCardDraft((current) => ({ ...current, title: event.target.value }))}
-                                                className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
-                                            />
-                                        </label>
-                                        <label className="block">
-                                            <span className="text-sm text-muted-foreground">Описание</span>
-                                            <textarea
-                                                value={cardDraft.description}
-                                                onChange={(event) => setCardDraft((current) => ({ ...current, description: event.target.value }))}
-                                                className="mt-1 min-h-24 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
-                                            />
-                                        </label>
-                                        <div className="grid gap-4 md:grid-cols-2">
+                                        <div className="space-y-4">
                                             <label className="block">
-                                                <span className="text-sm text-muted-foreground">Предмет</span>
-                                                <select
-                                                    value={cardDraft.subject}
-                                                    onChange={(event) => setCardDraft((current) => ({ ...current, subject: event.target.value }))}
-                                                    className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
-                                                >
-                                                    <option value="">Выберите предмет</option>
-                                                    {cardDraft.subject && !subjectOptions.some((subject) => subject.value === cardDraft.subject) && (
-                                                        <option value={cardDraft.subject}>{subjectLabel(cardDraft.subject)}</option>
-                                                    )}
-                                                    {subjectOptions.map((subject) => (
-                                                        <option key={subject.value} value={subject.value}>
-                                                            {subject.label}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </label>
-                                            <label className="block">
-                                                <span className="text-sm text-muted-foreground">Стоимость</span>
+                                                <span className="text-sm text-muted-foreground">Название</span>
                                                 <input
-                                                    value={cardDraft.pricePerLesson}
-                                                    onChange={(event) => setCardDraft((current) => ({ ...current, pricePerLesson: event.target.value }))}
+                                                    value={cardDraft.title}
+                                                    onChange={(event) => setCardDraft((current) => ({ ...current, title: event.target.value }))}
                                                     className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
                                                 />
                                             </label>
-                                        </div>
-                                        <div>
-                                            <div className="text-sm text-muted-foreground">С какими классами готовы работать</div>
-                                            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                                                {TUTOR_CARD_GRADE_OPTIONS.map((option) => (
-                                                    <label
-                                                        key={option.value}
-                                                        className="flex items-center gap-2 rounded-xl border border-border bg-input-background px-3 py-2 text-sm"
+                                            <label className="block">
+                                                <span className="text-sm text-muted-foreground">Описание</span>
+                                                <textarea
+                                                    value={cardDraft.description}
+                                                    onChange={(event) => setCardDraft((current) => ({ ...current, description: event.target.value }))}
+                                                    className="mt-1 min-h-24 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
+                                                />
+                                            </label>
+                                            <div className="grid gap-4 md:grid-cols-2">
+                                                <label className="block">
+                                                    <span className="text-sm text-muted-foreground">Предмет</span>
+                                                    <select
+                                                        value={cardDraft.subject}
+                                                        onChange={(event) => setCardDraft((current) => ({ ...current, subject: event.target.value }))}
+                                                        className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
                                                     >
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={cardDraft.supportedGrades.includes(option.value)}
-                                                            onChange={(event) =>
-                                                                setCardDraft((current) => {
-                                                                    const supportedGrades = event.target.checked
-                                                                        ? Array.from(new Set([...current.supportedGrades, option.value])).sort((left, right) => left - right)
-                                                                        : current.supportedGrades.filter((grade) => grade !== option.value);
-
-                                                                    return { ...current, supportedGrades };
-                                                                })
-                                                            }
-                                                            className="h-4 w-4 accent-primary"
-                                                        />
-                                                        {option.label}
-                                                    </label>
-                                                ))}
+                                                        <option value="">Выберите предмет</option>
+                                                        {cardDraft.subject && !subjectOptions.some((subject) => subject.value === cardDraft.subject) && (
+                                                            <option value={cardDraft.subject}>{subjectLabel(cardDraft.subject)}</option>
+                                                        )}
+                                                        {subjectOptions.map((subject) => (
+                                                            <option key={subject.value} value={subject.value}>
+                                                                {subject.label}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </label>
+                                                <label className="block">
+                                                    <span className="text-sm text-muted-foreground">Стоимость</span>
+                                                    <input
+                                                        value={cardDraft.pricePerLesson}
+                                                        onChange={(event) => setCardDraft((current) => ({ ...current, pricePerLesson: event.target.value }))}
+                                                        className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
+                                                    />
+                                                </label>
                                             </div>
+                                            <div>
+                                                <div className="text-sm text-muted-foreground">С какими классами готовы работать</div>
+                                                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                                    {TUTOR_CARD_GRADE_OPTIONS.map((option) => (
+                                                        <label
+                                                            key={option.value}
+                                                            className="flex items-center gap-2 rounded-xl border border-border bg-input-background px-3 py-2 text-sm"
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={cardDraft.supportedGrades.includes(option.value)}
+                                                                onChange={(event) =>
+                                                                    setCardDraft((current) => {
+                                                                        const supportedGrades = event.target.checked
+                                                                            ? Array.from(new Set([...current.supportedGrades, option.value])).sort((left, right) => left - right)
+                                                                            : current.supportedGrades.filter((grade) => grade !== option.value);
+
+                                                                        return { ...current, supportedGrades };
+                                                                    })
+                                                                }
+                                                                className="h-4 w-4 accent-primary"
+                                                            />
+                                                            {option.label}
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => void saveTutorCard()}
+                                                disabled={isBusy}
+                                                className="mr-4 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                                            >
+                                                <Save size={16} />
+                                                Сохранить карточку
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setIsCardFormOpen(false);
+                                                    setEditingCardId(null);
+                                                    setCardDraft(emptyTutorCard());
+                                                }}
+                                                className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-3 text-sm transition hover:bg-secondary"
+                                            >
+                                                Отмена
+                                            </button>
                                         </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => void saveTutorCard()}
-                                            disabled={isBusy}
-                                            className="mr-4 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-                                        >
-                                            <Save size={16} />
-                                            Сохранить карточку
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setIsCardFormOpen(false);
-                                                setEditingCardId(null);
-                                                setCardDraft(emptyTutorCard());
-                                            }}
-                                            className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-3 text-sm transition hover:bg-secondary"
-                                        >
-                                            Отмена
-                                        </button>
                                     </div>
-                                </div>
                                 )}
                             </div>
                         </section>
@@ -2091,8 +2138,8 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                     )}
 
                     {activeAccount && activeSection === "messages" && (
-                        <section className="rounded-2xl border border-border bg-card p-6">
-                            <div className="mb-4 flex items-center justify-between gap-3">
+                        <section className="rounded-2xl border border-border bg-card p-4 sm:p-6">
+                            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                                 <div>
                                     <h2 className="text-2xl font-semibold">Сообщения</h2>
                                     <p className="text-sm text-muted-foreground">Переписка доступна после принятия заявки.</p>
@@ -2104,105 +2151,131 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                 )}
                             </div>
 
-                            <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+                            {!selectedConversationId ? (
                                 <div className="space-y-2">
                                     {conversations.length === 0 ? (
                                         <div className="rounded-2xl border border-border bg-secondary p-5 text-sm text-muted-foreground">
                                             Пока нет диалогов.
                                         </div>
                                     ) : (
-                                        conversations.map((conversation) => (
-                                            <button
-                                                key={conversation.id}
-                                                type="button"
-                                                onClick={() => openChat(conversation.id, setActiveSection, setSelectedConversationId)}
-                                                className={`w-full rounded-2xl border p-4 text-left transition ${selectedConversationId === conversation.id
-                                                    ? "border-primary bg-secondary/70"
-                                                    : "border-border bg-card hover:border-primary/40"
-                                                    }`}
-                                            >
-                                                <div className="text-sm font-semibold">
-                                                    {studentAccountIds.has(conversation.studentAccountId)
-                                                        ? `${conversation.tutorFirstName} ${conversation.tutorLastName}`
-                                                        : `${conversation.studentFirstName} ${conversation.studentLastName}`}
-                                                </div>
-                                                <div className="mt-2 inline-flex rounded-full bg-secondary px-2.5 py-1 text-[11px] font-semibold text-secondary-foreground">
-                                                    {studentAccountIds.has(conversation.studentAccountId) ? "Репетитор" : "Ученик"}
-                                                </div>
-                                                <div className="mt-1 text-xs text-muted-foreground">
-                                                    {conversation.lastMessageText || "Нет сообщений"}
-                                                </div>
-                                                {conversation.unreadMessagesCount > 0 ? (
-                                                    <div className="mt-3 inline-flex rounded-full bg-destructive px-2.5 py-1 text-[11px] font-semibold text-destructive-foreground">
-                                                        {conversation.unreadMessagesCount}
-                                                    </div>
-                                                ) : null}
-                                            </button>
-                                        ))
-                                    )}
-                                </div>
+                                        conversations.map((conversation) => {
+                                            const isStudentConversation = studentAccountIds.has(conversation.studentAccountId);
+                                            const companionName = isStudentConversation
+                                                ? `${conversation.tutorFirstName} ${conversation.tutorLastName}`
+                                                : `${conversation.studentFirstName} ${conversation.studentLastName}`;
 
-                                <div className="rounded-2xl border border-border bg-card p-4">
-                                    {!selectedConversationId ? (
-                                        <div className="text-sm text-muted-foreground">Выберите диалог слева.</div>
-                                    ) : (
-                                        <>
-                                            <div className="max-h-96 space-y-3 overflow-y-auto pr-1">
-                                                {messages.length === 0 ? (
-                                                    <div className="text-sm text-muted-foreground">Сообщений пока нет.</div>
-                                                ) : (
-                                                    messages.map((message) => {
-                                                        const isMine = userAccountIds.has(message.senderAccountId);
-                                                        return (
-                                                            <div
-                                                                key={message.id}
-                                                                className={`flex ${isMine ? "justify-end" : "justify-start"}`}
-                                                            >
-                                                                <div
-                                                                    className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm ${isMine ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
-                                                                        }`}
-                                                                >
-                                                                    <div className="mb-1 text-xs opacity-70">
-                                                                        {message.senderFirstName} {message.senderLastName}
-                                                                    </div>
-                                                                    {message.text}
-                                                                    {isMine ? (
-                                                                        <div className="mt-2 flex justify-end">
-                                                                            {message.readAt ? (
-                                                                                <CheckCheck size={14} className="opacity-90" />
-                                                                            ) : (
-                                                                                <Check size={14} className="opacity-80" />
-                                                                            )}
-                                                                        </div>
-                                                                    ) : null}
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })
-                                                )}
-                                            </div>
-
-                                            <div className="mt-4 flex gap-3">
-                                                <textarea
-                                                    value={messageDraft.text}
-                                                    onChange={(event) => setMessageDraft({ text: event.target.value })}
-                                                    className="min-h-24 flex-1 rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
-                                                    placeholder="Напишите сообщение..."
-                                                />
+                                            return (
                                                 <button
+                                                    key={conversation.id}
                                                     type="button"
-                                                    disabled={isBusy}
-                                                    onClick={() => void sendMessage()}
-                                                    className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    onClick={() => openChat(conversation.id, setActiveSection, setSelectedConversationId)}
+                                                    className="flex w-full min-w-0 flex-col gap-2 rounded-2xl border border-border bg-card p-4 text-left transition hover:border-primary/40 hover:bg-secondary/40 sm:flex-row sm:items-center sm:justify-between"
                                                 >
-                                                    <Save size={16} />
-                                                    Отправить
+                                                    <span className="min-w-0">
+                                                        <span className="block truncate text-sm font-semibold">{companionName}</span>
+                                                        <span className="mt-1 block truncate text-xs text-muted-foreground">
+                                                            {conversation.lastMessageText || "Нет сообщений"}
+                                                        </span>
+                                                    </span>
+                                                    <span className="flex shrink-0 items-center gap-2">
+                                                        <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-semibold text-secondary-foreground">
+                                                            {isStudentConversation ? "Репетитор" : "Ученик"}
+                                                        </span>
+                                                        {conversation.unreadMessagesCount > 0 ? (
+                                                            <span className="rounded-full bg-destructive px-2.5 py-1 text-[11px] font-semibold text-destructive-foreground">
+                                                                {conversation.unreadMessagesCount}
+                                                            </span>
+                                                        ) : null}
+                                                    </span>
                                                 </button>
-                                            </div>
-                                        </>
+                                            );
+                                        })
                                     )}
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="min-w-0 rounded-2xl border border-border bg-card p-3 sm:p-4">
+                                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedConversationId(null);
+                                                setMessages([]);
+                                                navigateTo("/profile/messages");
+                                            }}
+                                            className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+                                        >
+                                            <ArrowLeft size={16} />
+                                            К списку чатов
+                                        </button>
+
+                                        {selectedConversation ? (
+                                            <div className="min-w-0 text-right">
+                                                <div className="truncate text-sm font-semibold">
+                                                    {studentAccountIds.has(selectedConversation.studentAccountId)
+                                                        ? `${selectedConversation.tutorFirstName} ${selectedConversation.tutorLastName}`
+                                                        : `${selectedConversation.studentFirstName} ${selectedConversation.studentLastName}`}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    {studentAccountIds.has(selectedConversation.studentAccountId) ? "Репетитор" : "Ученик"}
+                                                </div>
+                                            </div>
+                                        ) : null}
+                                    </div>
+
+                                    <div className="max-h-[58vh] space-y-3 overflow-y-auto pr-1">
+                                        {messages.length === 0 ? (
+                                            <div className="text-sm text-muted-foreground">Сообщений пока нет.</div>
+                                        ) : (
+                                            messages.map((message) => {
+                                                const isMine = userAccountIds.has(message.senderAccountId);
+                                                return (
+                                                    <div
+                                                        key={message.id}
+                                                        className={`flex ${isMine ? "justify-end" : "justify-start"}`}
+                                                    >
+                                                        <div
+                                                            className={`max-w-[88%] break-words rounded-2xl px-4 py-3 text-sm sm:max-w-[75%] ${isMine ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
+                                                                }`}
+                                                        >
+                                                            <div className="mb-1 text-xs opacity-70">
+                                                                {message.senderFirstName} {message.senderLastName}
+                                                            </div>
+                                                            {message.text}
+                                                            {isMine ? (
+                                                                <div className="mt-2 flex justify-end">
+                                                                    {message.readAt ? (
+                                                                        <CheckCheck size={14} className="opacity-90" />
+                                                                    ) : (
+                                                                        <Check size={14} className="opacity-80" />
+                                                                    )}
+                                                                </div>
+                                                            ) : null}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+
+                                    <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                                        <textarea
+                                            value={messageDraft.text}
+                                            onChange={(event) => setMessageDraft({ text: event.target.value })}
+                                            className="min-h-24 min-w-0 flex-1 rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
+                                            placeholder="Напишите сообщение..."
+                                        />
+                                        <button
+                                            type="button"
+                                            disabled={isBusy}
+                                            onClick={() => void sendMessage()}
+                                            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                                        >
+                                            <Save size={16} />
+                                            Отправить
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </section>
                     )}
 
@@ -2351,11 +2424,10 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                                 key={filter.key}
                                                 type="button"
                                                 onClick={() => setLessonFilter(filter.key)}
-                                                className={`rounded-xl px-4 py-2 text-sm transition ${
-                                                    lessonFilter === filter.key
+                                                className={`rounded-xl px-4 py-2 text-sm transition ${lessonFilter === filter.key
                                                         ? "bg-primary text-primary-foreground"
                                                         : "border border-border bg-card hover:bg-secondary"
-                                                }`}
+                                                    }`}
                                             >
                                                 {filter.label} · {filter.count}
                                             </button>

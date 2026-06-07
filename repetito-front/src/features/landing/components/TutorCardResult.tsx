@@ -37,10 +37,10 @@ export function TutorCardResult({
           onOpen(card.id);
         }
       }}
-      className="flex h-full cursor-pointer flex-col rounded-3xl border border-border bg-card p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+      className="flex h-full cursor-pointer flex-col rounded-3xl border border-border bg-card p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md sm:p-5"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div>
+      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
+        <div className="min-w-0">
           <h3 className="text-lg font-semibold">{card.title}</h3>
           <div className="mt-1 text-sm text-muted-foreground">
             {card.tutor.firstName} {card.tutor.lastName}
@@ -75,7 +75,7 @@ export function TutorCardResult({
             onApply(card.id);
           }}
           disabled={isApplying}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isApplying ? "Отправляем..." : "Оставить заявку"}
         </button>

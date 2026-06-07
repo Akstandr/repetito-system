@@ -28,7 +28,7 @@ export function TutorSearchPanel({
           <Search size={13} />
           Поиск репетитора
         </div>
-        <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
+        <h1 className="text-2xl font-semibold leading-tight sm:text-4xl">
           Найдите репетитора <span className="text-primary">под свой запрос</span>
         </h1>
         <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
@@ -72,7 +72,7 @@ export function TutorSearchPanel({
           <button
             type="button"
             onClick={onSearch}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 md:w-auto"
           >
             <Search size={16} />
             Найти репетитора

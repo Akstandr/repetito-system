@@ -131,6 +131,11 @@
 
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+  }
+
+  #root {
+    min-width: 0;
   }
 
   /**

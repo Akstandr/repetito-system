@@ -287,7 +287,7 @@ export function TutorCardDetailsPage({ cardId }: { cardId: number }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b border-border bg-card/85 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
+        <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-2 px-3 py-2 sm:gap-4 sm:px-6 sm:py-0">
           <button
             type="button"
             onClick={() => navigateTo("/")}
@@ -302,7 +302,7 @@ export function TutorCardDetailsPage({ cardId }: { cardId: number }) {
               <button
                 type="button"
                 onClick={() => navigateTo("/account")}
-                className="rounded-full bg-secondary px-3 py-1.5 text-sm text-secondary-foreground transition hover:bg-secondary/80"
+                className="max-w-[44vw] truncate rounded-full bg-secondary px-3 py-1.5 text-sm text-secondary-foreground transition hover:bg-secondary/80 sm:max-w-64"
               >
                 {`${session.user.firstName || session.user.email}${session.user.lastName ? ` ${session.user.lastName}` : ""}`.trim()}
               </button>
@@ -343,7 +343,7 @@ export function TutorCardDetailsPage({ cardId }: { cardId: number }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:py-12">
+      <main className="mx-auto max-w-6xl px-3 py-6 sm:px-6 lg:py-12">
         <button
           type="button"
           onClick={() => navigateTo("/")}
@@ -376,7 +376,7 @@ export function TutorCardDetailsPage({ cardId }: { cardId: number }) {
               </div>
             )}
 
-            <section className="rounded-[28px] border border-border bg-card p-6 shadow-sm sm:p-8">
+            <section className="rounded-[24px] border border-border bg-card p-4 shadow-sm sm:rounded-[28px] sm:p-8">
               <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
                 <div>
                   <div className="mb-4 flex flex-wrap gap-2 text-xs">
@@ -386,7 +386,7 @@ export function TutorCardDetailsPage({ cardId }: { cardId: number }) {
                       <span className="rounded-full bg-muted px-3 py-1">{card.supportedGrades.join(", ")} класс</span>
                     )}
                   </div>
-                  <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">{card.title}</h1>
+                  <h1 className="text-2xl font-semibold leading-tight sm:text-4xl">{card.title}</h1>
                   <p className="mt-3 text-base text-muted-foreground">
                     {card.tutor.firstName} {card.tutor.lastName}
                   </p>
@@ -433,9 +433,9 @@ export function TutorCardDetailsPage({ cardId }: { cardId: number }) {
                   )}
                 </div>
 
-                <aside className="rounded-3xl border border-border bg-background p-5">
+                <aside className="rounded-3xl border border-border bg-background p-4 sm:p-5">
                   <div className="text-sm text-muted-foreground">Стоимость занятия</div>
-                  <div className="mt-2 text-3xl font-semibold">{card.pricePerLesson.toLocaleString("ru-RU")} ₽ / час</div>
+                  <div className="mt-2 text-2xl font-semibold sm:text-3xl">{card.pricePerLesson.toLocaleString("ru-RU")} ₽ / час</div>
 
                   <div className="mt-5 border-t border-border pt-5">
                     <div className="text-sm text-muted-foreground">Отзывы</div>
@@ -468,7 +468,7 @@ export function TutorCardDetailsPage({ cardId }: { cardId: number }) {
               </div>
             </section>
 
-            <section className="rounded-[28px] border border-border bg-card p-6 shadow-sm sm:p-8">
+            <section className="rounded-[24px] border border-border bg-card p-4 shadow-sm sm:rounded-[28px] sm:p-8">
               <div className="mb-5 flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-2xl font-semibold">Отзывы о репетиторе</h2>

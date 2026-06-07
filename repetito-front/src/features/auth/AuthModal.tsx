@@ -203,7 +203,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
     <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-full max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-card p-8 shadow-2xl focus:outline-none">
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[92vh] w-[calc(100vw-24px)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-card p-4 shadow-2xl focus:outline-none sm:p-8">
           <Dialog.Close className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
             <X size={16} />
           </Dialog.Close>
@@ -310,7 +310,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
               <Dialog.Description className="mb-5 text-sm text-muted-foreground">После регистрации вы сможете создать аккаунты ученика и репетитора в кабинете</Dialog.Description>
 
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-3 sm:grid-cols-2">
                   <div>
                     <label htmlFor="reg-firstname" className="mb-1.5 block text-sm text-foreground">
                       Имя

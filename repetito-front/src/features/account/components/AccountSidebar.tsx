@@ -20,10 +20,10 @@ export function AccountSidebar({
 }) {
   return (
     <aside className="rounded-2xl border border-border bg-card p-4">
-      <div className="mb-5">
+      <div className="mb-4 lg:mb-5">
         <div className="text-sm text-muted-foreground">Профиль</div>
-        <div className="mt-1 text-lg font-semibold">{displayName}</div>
-        <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">{userEmail}</div>
+        <div className="mt-1 truncate text-lg font-semibold">{displayName}</div>
+        <div className="mt-1 truncate text-sm text-muted-foreground">{userEmail}</div>
       </div>
 
       <div className="space-y-1">
@@ -39,7 +39,7 @@ export function AccountSidebar({
                 isActive ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
-              <Icon size={16} />
+              <Icon size={16} className="shrink-0" />
               <span className="flex-1">{item.label}</span>
               {item.badge ? (
                 <span className="rounded-full bg-destructive px-2 py-0.5 text-[11px] font-semibold text-destructive-foreground">
