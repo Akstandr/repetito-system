@@ -58,6 +58,18 @@ public interface TutorApplicationRepository extends JpaRepository<TutorApplicati
     })
     Optional<TutorApplication> findByIdAndTutorAccountId(Long id, Long tutorAccountId);
 
+    @EntityGraph(attributePaths = {
+            "tutorCard",
+            "tutorCard.tutorAccount",
+            "tutorCard.tutorAccount.user",
+            "studentAccount",
+            "studentAccount.user",
+            "tutorAccount",
+            "tutorAccount.user",
+            "conversation"
+    })
+    Optional<TutorApplication> findByStudentAccountIdAndTutorAccountIdAndStatus(Long studentAccountId, Long tutorAccountId, ApplicationStatus status);
+
     boolean existsByTutorCardId(Long tutorCardId);
 
     boolean existsByStudentAccountIdAndTutorAccountIdAndStatus(Long studentAccountId, Long tutorAccountId, ApplicationStatus status);

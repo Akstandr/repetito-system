@@ -1,6 +1,6 @@
 ﻿import { ChevronRight, BookOpen, Calendar, Edit3, GraduationCap, Loader2, MessageCircle, Star, Users } from "lucide-react";
 import { useEffect, useState, type ComponentType } from "react";
-import { MARKETPLACE_API_BASE_URL, getAuthHeaders, readErrorMessage } from "../../../shared/api";
+import { MARKETPLACE_API_BASE_URL, formatErrorMessage, getAuthHeaders, readErrorMessage } from "../../../shared/api";
 
 interface ConversationSummary {
   unreadMessagesCount?: number;
@@ -33,7 +33,7 @@ function navigateTo(path: string) {
 }
 
 function formatError(error: unknown, fallback: string) {
-  return error instanceof Error ? error.message : fallback;
+  return formatErrorMessage(error instanceof Error ? error.message : "", fallback);
 }
 
 export function TutorDashboard({

@@ -31,6 +31,7 @@ export interface AccountView {
   id: number;
   type: AccountType;
   createdAt: string;
+  publicProfile: boolean;
   active: boolean;
   studentProfile: StudentProfileView | null;
   tutorProfile: TutorProfileView | null;

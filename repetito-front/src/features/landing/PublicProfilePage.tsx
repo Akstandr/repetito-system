@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, BookOpen, Calendar, GraduationCap, Loader2, Star, UserRound } from "lucide-react";
-import { API_BASE_URL } from "../../shared/api";
+import { ArrowLeft, BookOpen, GraduationCap, Loader2, Star, UserRound } from "lucide-react";
+import { API_BASE_URL, MARKETPLACE_API_BASE_URL, formatErrorMessage, getAuthHeaders, readErrorMessage } from "../../shared/api";
 import { markdownToSafeHtml } from "../../shared/markdown";
+import { ThemeToggle } from "../../shared/ThemeToggle";
+import { useAuthSession } from "../../shared/useAuthSession";
 import type { TutorCard, TutorReview } from "./types";
 
 type AccountType = "student" | "tutor" | "STUDENT" | "TUTOR";
@@ -38,6 +40,12 @@ interface PublicProfileResponse {
   reviews: TutorReview[];
 }
 
+interface TutorEducationView {
+  institution: string;
+  specialty: string;
+  graduationYear: string;
+}
+
 function navigateTo(path: string) {
   window.history.pushState({}, "", path);
   window.dispatchEvent(new PopStateEvent("popstate"));
@@ -58,10 +66,39 @@ function formatSubject(value: string) {
     .join(" ");
 }
 
+function parseTutorEducation(value: string | null | undefined): TutorEducationView[] {
+  if (!value) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((item) => {
+          const education = item as Partial<TutorEducationView>;
+          return {
+            institution: String(education.institution ?? ""),
+            specialty: String(education.specialty ?? ""),
+            graduationYear: String(education.graduationYear ?? ""),
+          };
+        })
+        .filter((item) => item.institution || item.specialty || item.graduationYear);
+    }
+  } catch {
+    return [{ institution: value, specialty: "", graduationYear: "" }];
+  }
+
+  return [];
+}
+
 export function PublicProfilePage({ accountId }: { accountId: number }) {
+  const { session } = useAuthSession();
   const [profile, setProfile] = useState<PublicProfileResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [contactError, setContactError] = useState<string | null>(null);
+  const [isContacting, setIsContacting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -82,7 +119,7 @@ export function PublicProfilePage({ accountId }: { accountId: number }) {
       })
       .catch((loadError) => {
         if (!cancelled) {
-          setError(loadError instanceof Error ? loadError.message : "Не удалось загрузить профиль");
+          setError(formatErrorMessage(loadError instanceof Error ? loadError.message : "", "Не удалось загрузить профиль"));
         }
       })
       .finally(() => {
@@ -98,12 +135,49 @@ export function PublicProfilePage({ accountId }: { accountId: number }) {
 
   const tutorAccount = useMemo(() => profile?.accounts.find((account) => account.type.toLowerCase() === "tutor") ?? null, [profile]);
   const studentAccount = useMemo(() => profile?.accounts.find((account) => account.type.toLowerCase() === "student") ?? null, [profile]);
+  const tutorEducation = useMemo(
+    () => parseTutorEducation(tutorAccount?.tutorProfile?.education),
+    [tutorAccount?.tutorProfile?.education],
+  );
   const averageRating = useMemo(() => {
     if (!profile || profile.reviews.length === 0) {
       return null;
     }
     return profile.reviews.reduce((sum, review) => sum + review.rating, 0) / profile.reviews.length;
   }, [profile]);
+
+  async function contactTutor() {
+    if (!tutorAccount) {
+      return;
+    }
+    if (!session?.user) {
+      setContactError("Войдите в аккаунт, чтобы написать репетитору");
+      return;
+    }
+
+    setIsContacting(true);
+    setContactError(null);
+    try {
+      const response = await fetch(`${MARKETPLACE_API_BASE_URL}/conversations/contact`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({ tutorAccountId: tutorAccount.id }),
+      });
+      if (!response.ok) {
+        throw new Error(await readErrorMessage(response, "Не удалось открыть чат"));
+      }
+
+      const conversation = (await response.json()) as { id: number };
+      navigateTo(`/profile/chat/${conversation.id}`);
+    } catch (contactLoadError) {
+      setContactError(formatErrorMessage(contactLoadError instanceof Error ? contactLoadError.message : "", "Не удалось открыть чат"));
+    } finally {
+      setIsContacting(false);
+    }
+  }
 
   return (
     <div className="app-gradient-bg min-h-screen text-foreground">
@@ -117,9 +191,13 @@ export function PublicProfilePage({ accountId }: { accountId: number }) {
             <ArrowLeft size={17} />
             Назад
           </button>
-          <div className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5 text-sm text-secondary-foreground">
-            <UserRound size={15} />
-            Публичный профиль
+
+          <div className="flex items-center gap-2">
+            <div className="hidden items-center gap-2 rounded-full bg-secondary px-3 py-1.5 text-sm text-secondary-foreground sm:inline-flex">
+              <UserRound size={15} />
+              Публичный профиль
+            </div>
+            <ThemeToggle />
           </div>
         </div>
       </header>
@@ -168,6 +246,23 @@ export function PublicProfilePage({ accountId }: { accountId: number }) {
                   </div>
                 ) : null}
               </div>
+              {tutorAccount ? (
+                <div className="mt-5">
+                  <button
+                    type="button"
+                    onClick={() => void contactTutor()}
+                    disabled={isContacting}
+                    className="inline-flex w-full items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                  >
+                    {isContacting ? "Открываем чат..." : "Связаться"}
+                  </button>
+                  {contactError ? (
+                    <div className="mt-3 rounded-2xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+                      {contactError}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
             </section>
 
             {tutorAccount?.tutorProfile ? (
@@ -191,10 +286,22 @@ export function PublicProfilePage({ accountId }: { accountId: number }) {
                       <div className="mt-1 font-semibold">{tutorAccount.tutorProfile.experience} лет</div>
                     </div>
                   ) : null}
-                  {tutorAccount.tutorProfile.education ? (
+                  {tutorEducation.length > 0 ? (
                     <div className="rounded-2xl bg-secondary/60 p-4">
                       <div className="text-xs text-muted-foreground">Образование</div>
-                      <div className="mt-1 whitespace-pre-line text-sm">{tutorAccount.tutorProfile.education}</div>
+                      <div className="mt-3 space-y-3">
+                        {tutorEducation.map((education, index) => (
+                          <div key={index} className="rounded-xl border border-border bg-card p-3">
+                            <div className="font-semibold">{education.institution || "Учебное заведение не указано"}</div>
+                            {education.specialty && (
+                              <div className="mt-1 text-sm text-muted-foreground">{education.specialty}</div>
+                            )}
+                            {education.graduationYear && (
+                              <div className="mt-1 text-sm text-muted-foreground">Год окончания: {education.graduationYear}</div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ) : null}
                 </div>

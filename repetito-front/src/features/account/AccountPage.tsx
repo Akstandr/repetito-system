@@ -23,6 +23,7 @@ import {
     MARKETPLACE_API_BASE_URL,
     getAuthHeaders,
     fetchSubjectOptions,
+    formatErrorMessage,
     readErrorMessage,
     setCookieToken,
 } from "../../shared/api";
@@ -303,6 +304,15 @@ function formatDateTimeLocal(value: string | null | undefined) {
     const offsetMs = date.getTimezoneOffset() * 60 * 1000;
     return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
 }
+
+function digitsOnly(value: string) {
+    return value.replace(/\D/g, "");
+}
+
+function errorText(error: unknown, fallback: string) {
+    return formatErrorMessage(error instanceof Error ? error.message : "", fallback);
+}
+
 function emptyStudentProfile(): StudentProfileForm {
     return { description: "", subjects: "", gradeLevel: "", format: "" };
 }
@@ -799,7 +809,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             await syncSession((await response.json()) as AuthResponse);
             setActiveSection("profile");
         } catch (selectError) {
-            setError(selectError instanceof Error ? selectError.message : "Не удалось выбрать аккаунт");
+            setError(errorText(selectError, "Не удалось выбрать аккаунт"));
         } finally {
             setIsBusy(false);
         }
@@ -822,7 +832,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             await syncSession((await response.json()) as AuthResponse);
             setActiveSection("settings");
         } catch (createError) {
-            setError(createError instanceof Error ? createError.message : "Не удалось создать аккаунт");
+            setError(errorText(createError, "Не удалось создать аккаунт"));
         } finally {
             setIsBusy(false);
         }
@@ -846,7 +856,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             setIsProfileEditing(false);
             setError(null);
         } catch (saveError) {
-            setError(saveError instanceof Error ? saveError.message : "Не удалось сохранить профиль");
+            setError(errorText(saveError, "Не удалось сохранить профиль"));
         } finally {
             setIsBusy(false);
         }
@@ -879,7 +889,30 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             setIsProfileEditing(false);
             setError(null);
         } catch (saveError) {
-            setError(saveError instanceof Error ? saveError.message : "Не удалось сохранить профиль");
+            setError(errorText(saveError, "Не удалось сохранить профиль"));
+        } finally {
+            setIsBusy(false);
+        }
+    }
+
+    async function updatePublicProfile(publicProfile: boolean) {
+        setIsBusy(true);
+        try {
+            const response = await fetch(`${API_BASE_URL}/accounts/me/public-profile`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...getAuthHeaders(),
+                },
+                body: JSON.stringify({ publicProfile }),
+            });
+            if (!response.ok) {
+                throw new Error(await readErrorMessage(response, "Не удалось обновить видимость профиля"));
+            }
+            await syncSession((await response.json()) as AuthResponse);
+            setError(null);
+        } catch (visibilityError) {
+            setError(errorText(visibilityError, "Не удалось обновить видимость профиля"));
         } finally {
             setIsBusy(false);
         }
@@ -896,7 +929,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             }
             setCards((await response.json()) as TutorCardView[]);
         } catch (loadError) {
-            setError(loadError instanceof Error ? loadError.message : "Не удалось загрузить карточки");
+            setError(errorText(loadError, "Не удалось загрузить карточки"));
         } finally {
             setIsBusy(false);
         }
@@ -940,7 +973,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             await loadTutorCards();
             setActiveSection("cards");
         } catch (saveError) {
-            setError(saveError instanceof Error ? saveError.message : "Не удалось сохранить карточку");
+            setError(errorText(saveError, "Не удалось сохранить карточку"));
         } finally {
             setIsBusy(false);
         }
@@ -980,7 +1013,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             setIsCardFormOpen(false);
             await loadTutorCards();
         } catch (visibilityError) {
-            setError(visibilityError instanceof Error ? visibilityError.message : "Не удалось обновить карточку");
+            setError(errorText(visibilityError, "Не удалось обновить карточку"));
         } finally {
             setIsBusy(false);
         }
@@ -998,7 +1031,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             }
             await loadTutorCards();
         } catch (deleteError) {
-            setError(deleteError instanceof Error ? deleteError.message : "Не удалось удалить карточку");
+            setError(errorText(deleteError, "Не удалось удалить карточку"));
         } finally {
             setIsBusy(false);
         }
@@ -1019,7 +1052,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             }
             setApplications((await response.json()) as ApplicationView[]);
         } catch (loadError) {
-            setError(loadError instanceof Error ? loadError.message : "Не удалось загрузить заявки");
+            setError(errorText(loadError, "Не удалось загрузить заявки"));
         } finally {
             if (!options.silent) {
                 setIsBusy(false);
@@ -1038,7 +1071,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             }
             setTutorStudents((await response.json()) as TutorStudentView[]);
         } catch (loadError) {
-            setError(loadError instanceof Error ? loadError.message : "Не удалось загрузить учеников");
+            setError(errorText(loadError, "Не удалось загрузить учеников"));
         } finally {
             setIsBusy(false);
         }
@@ -1055,7 +1088,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             }
             setStudentTutors((await response.json()) as StudentTutorView[]);
         } catch (loadError) {
-            setError(loadError instanceof Error ? loadError.message : "Не удалось загрузить репетиторов");
+            setError(errorText(loadError, "Не удалось загрузить репетиторов"));
         } finally {
             setIsBusy(false);
         }
@@ -1072,7 +1105,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             }
             setStudentReviews((await response.json()) as ReviewView[]);
         } catch (loadError) {
-            setError(loadError instanceof Error ? loadError.message : "Не удалось загрузить отзывы");
+            setError(errorText(loadError, "Не удалось загрузить отзывы"));
         } finally {
             setIsBusy(false);
         }
@@ -1099,7 +1132,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                 return next;
             });
         } catch (loadError) {
-            setError(loadError instanceof Error ? loadError.message : "Не удалось загрузить отзывы");
+            setError(errorText(loadError, "Не удалось загрузить отзывы"));
         } finally {
             setIsBusy(false);
         }
@@ -1127,7 +1160,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             setReviewDrafts((current) => ({ ...current, [tutorAccountId]: emptyReview() }));
             await loadStudentReviews();
         } catch (reviewError) {
-            setError(reviewError instanceof Error ? reviewError.message : "Не удалось отправить отзыв");
+            setError(errorText(reviewError, "Не удалось отправить отзыв"));
         } finally {
             setIsBusy(false);
         }
@@ -1149,7 +1182,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             }
             await loadTutorReviews();
         } catch (replyError) {
-            setError(replyError instanceof Error ? replyError.message : "Не удалось отправить ответ");
+            setError(errorText(replyError, "Не удалось отправить ответ"));
         } finally {
             setIsBusy(false);
         }
@@ -1174,7 +1207,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                 await loadTutorStudents();
             }
         } catch (acceptError) {
-            setError(acceptError instanceof Error ? acceptError.message : "Не удалось принять заявку");
+            setError(errorText(acceptError, "Не удалось принять заявку"));
         } finally {
             setIsBusy(false);
         }
@@ -1193,7 +1226,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             const updated = (await response.json()) as ApplicationView;
             setApplications((current) => current.map((item) => (item.id === updated.id ? updated : item)));
         } catch (rejectError) {
-            setError(rejectError instanceof Error ? rejectError.message : "Не удалось отклонить заявку");
+            setError(errorText(rejectError, "Не удалось отклонить заявку"));
         } finally {
             setIsBusy(false);
         }
@@ -1216,7 +1249,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                 setSelectedConversationId(result[0].id);
             }
         } catch (loadError) {
-            setError(loadError instanceof Error ? loadError.message : "Не удалось загрузить переписку");
+            setError(errorText(loadError, "Не удалось загрузить переписку"));
         } finally {
             if (!options.silent) {
                 setIsBusy(false);
@@ -1235,7 +1268,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             setMessages((await response.json()) as MessageView[]);
             await loadConversations({ preserveSelection: true });
         } catch (loadError) {
-            setError(loadError instanceof Error ? loadError.message : "Не удалось загрузить сообщения");
+            setError(errorText(loadError, "Не удалось загрузить сообщения"));
         }
     }
 
@@ -1259,7 +1292,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             setMessageDraft(emptyMessage());
             await loadConversations({ preserveSelection: true });
         } catch (sendError) {
-            setError(sendError instanceof Error ? sendError.message : "Не удалось отправить сообщение");
+            setError(errorText(sendError, "Не удалось отправить сообщение"));
         } finally {
             setIsBusy(false);
         }
@@ -1277,7 +1310,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             const loadedLessons = (await response.json()) as LessonView[];
             setLessons(loadedLessons.sort((left, right) => new Date(left.startDateTime).getTime() - new Date(right.startDateTime).getTime()));
         } catch (loadError) {
-            setError(loadError instanceof Error ? loadError.message : "Не удалось загрузить занятия");
+            setError(errorText(loadError, "Не удалось загрузить занятия"));
         } finally {
             setIsBusy(false);
         }
@@ -1309,7 +1342,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             setIsLessonFormOpen(false);
             await loadLessons();
         } catch (createError) {
-            setError(createError instanceof Error ? createError.message : "Не удалось создать занятие");
+            setError(errorText(createError, "Не удалось создать занятие"));
         } finally {
             setIsBusy(false);
         }
@@ -1339,7 +1372,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             setLessonEditDraft(emptyLesson());
             await loadLessons();
         } catch (updateError) {
-            setError(updateError instanceof Error ? updateError.message : "Не удалось сохранить занятие");
+            setError(errorText(updateError, "Не удалось сохранить занятие"));
         } finally {
             setIsBusy(false);
         }
@@ -1365,7 +1398,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             }
             await loadLessons();
         } catch (cancelError) {
-            setError(cancelError instanceof Error ? cancelError.message : "Не удалось отменить занятие");
+            setError(errorText(cancelError, "Не удалось отменить занятие"));
         } finally {
             setIsBusy(false);
         }
@@ -1572,6 +1605,27 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                 )}
                             </div>
 
+                            <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-border bg-secondary/45 p-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <div className="text-sm font-semibold">Публичный профиль</div>
+                                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                                        Если профиль включен, другие пользователи смогут найти его на главной странице и открыть по ссылке.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    disabled={isBusy}
+                                    onClick={() => void updatePublicProfile(!activeAccount.publicProfile)}
+                                    className={`inline-flex min-w-36 items-center justify-center rounded-xl px-4 py-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                                        activeAccount.publicProfile
+                                            ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                            : "border border-border bg-card text-muted-foreground hover:bg-secondary"
+                                    }`}
+                                >
+                                    {activeAccount.publicProfile ? "Публичный" : "Скрыт"}
+                                </button>
+                            </div>
+
                             <fieldset disabled={!isProfileEditing || isBusy} className={!isProfileEditing ? "opacity-80" : ""}>
                                 {activeAccount.type === "student" ? (
                                     <div className="grid gap-4 md:grid-cols-2">
@@ -1659,19 +1713,20 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                         <label className="block">
                                             <span className="text-sm text-muted-foreground">Опыт преподавания, лет</span>
                                             <input
-                                                type="number"
-                                                min="0"
-                                                step="1"
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
                                                 value={tutorProfile.experience}
-                                                onChange={(event) => setTutorProfile((current) => ({ ...current, experience: event.target.value }))}
+                                                onChange={(event) => setTutorProfile((current) => ({ ...current, experience: digitsOnly(event.target.value) }))}
                                                 className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
                                             />
                                         </label>
                                         <label className="block">
                                             <span className="text-sm text-muted-foreground">Стоимость занятия</span>
                                             <input
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
                                                 value={tutorProfile.price}
-                                                onChange={(event) => setTutorProfile((current) => ({ ...current, price: event.target.value }))}
+                                                onChange={(event) => setTutorProfile((current) => ({ ...current, price: digitsOnly(event.target.value) }))}
                                                 className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
                                             />
                                         </label>
@@ -1734,12 +1789,14 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                                             <label className="block">
                                                                 <span className="text-xs text-muted-foreground">Год окончания</span>
                                                                 <input
+                                                                    inputMode="numeric"
+                                                                    pattern="[0-9]*"
                                                                     value={education.graduationYear}
                                                                     onChange={(event) =>
                                                                         setTutorProfile((current) => ({
                                                                             ...current,
                                                                             educationItems: current.educationItems.map((item, itemIndex) =>
-                                                                                itemIndex === index ? { ...item, graduationYear: event.target.value } : item,
+                                                                                itemIndex === index ? { ...item, graduationYear: digitsOnly(event.target.value) } : item,
                                                                             ),
                                                                         }))
                                                                     }
@@ -1924,8 +1981,10 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                                 <label className="block">
                                                     <span className="text-sm text-muted-foreground">Стоимость</span>
                                                     <input
+                                                        inputMode="numeric"
+                                                        pattern="[0-9]*"
                                                         value={cardDraft.pricePerLesson}
-                                                        onChange={(event) => setCardDraft((current) => ({ ...current, pricePerLesson: event.target.value }))}
+                                                        onChange={(event) => setCardDraft((current) => ({ ...current, pricePerLesson: digitsOnly(event.target.value) }))}
                                                         className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
                                                     />
                                                 </label>
@@ -2359,20 +2418,20 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                         <label className="block">
                                             <span className="text-sm text-muted-foreground">Длительность, минут</span>
                                             <input
-                                                type="number"
-                                                min="1"
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
                                                 value={lessonDraft.durationMinutes}
-                                                onChange={(event) => setLessonDraft((current) => ({ ...current, durationMinutes: event.target.value }))}
+                                                onChange={(event) => setLessonDraft((current) => ({ ...current, durationMinutes: digitsOnly(event.target.value) }))}
                                                 className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
                                             />
                                         </label>
                                         <label className="block">
                                             <span className="text-sm text-muted-foreground">Цена</span>
                                             <input
-                                                type="number"
-                                                min="1"
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
                                                 value={lessonDraft.price}
-                                                onChange={(event) => setLessonDraft((current) => ({ ...current, price: event.target.value }))}
+                                                onChange={(event) => setLessonDraft((current) => ({ ...current, price: digitsOnly(event.target.value) }))}
                                                 className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
                                             />
                                         </label>
@@ -2551,20 +2610,20 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                                             <label className="block">
                                                                 <span className="text-sm text-muted-foreground">Длительность, минут</span>
                                                                 <input
-                                                                    type="number"
-                                                                    min="1"
+                                                                    inputMode="numeric"
+                                                                    pattern="[0-9]*"
                                                                     value={lessonEditDraft.durationMinutes}
-                                                                    onChange={(event) => setLessonEditDraft((current) => ({ ...current, durationMinutes: event.target.value }))}
+                                                                    onChange={(event) => setLessonEditDraft((current) => ({ ...current, durationMinutes: digitsOnly(event.target.value) }))}
                                                                     className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
                                                                 />
                                                             </label>
                                                             <label className="block">
                                                                 <span className="text-sm text-muted-foreground">Цена</span>
                                                                 <input
-                                                                    type="number"
-                                                                    min="1"
+                                                                    inputMode="numeric"
+                                                                    pattern="[0-9]*"
                                                                     value={lessonEditDraft.price}
-                                                                    onChange={(event) => setLessonEditDraft((current) => ({ ...current, price: event.target.value }))}
+                                                                    onChange={(event) => setLessonEditDraft((current) => ({ ...current, price: digitsOnly(event.target.value) }))}
                                                                     className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
                                                                 />
                                                             </label>

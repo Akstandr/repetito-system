@@ -1,6 +1,7 @@
 package dev.andrew.repetitobackend.conversations.controller;
 
 import dev.andrew.repetitobackend.common.security.AuthPrincipal;
+import dev.andrew.repetitobackend.conversations.dto.ContactTutorRequest;
 import dev.andrew.repetitobackend.conversations.dto.ConversationResponse;
 import dev.andrew.repetitobackend.conversations.dto.MessageRequest;
 import dev.andrew.repetitobackend.conversations.dto.MessageResponse;
@@ -23,6 +24,17 @@ public class ConversationController {
     @GetMapping("/my")
     public ResponseEntity<List<ConversationResponse>> my(Authentication authentication) {
         return ResponseEntity.ok(conversationService.getMyConversations((AuthPrincipal) authentication.getPrincipal()));
+    }
+
+    @PostMapping("/contact")
+    public ResponseEntity<ConversationResponse> contactTutor(
+            Authentication authentication,
+            @Valid @RequestBody ContactTutorRequest request
+    ) {
+        return ResponseEntity.ok(conversationService.contactTutor(
+                (AuthPrincipal) authentication.getPrincipal(),
+                request.getTutorAccountId()
+        ));
     }
 
     @GetMapping("/{id}/messages")

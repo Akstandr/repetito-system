@@ -11,6 +11,7 @@ public record PublicAccountResponse(
         Long id,
         AccountType type,
         Instant createdAt,
+        boolean publicProfile,
         StudentProfileResponse studentProfile,
         TutorProfileResponse tutorProfile
 ) {
@@ -19,6 +20,7 @@ public record PublicAccountResponse(
                 account.getId(),
                 account.getType(),
                 account.getCreatedAt(),
+                account.isPublicProfile(),
                 StudentProfileResponse.from(studentProfile),
                 TutorProfileResponse.from(tutorProfile)
         );

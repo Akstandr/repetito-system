@@ -3,6 +3,7 @@ package dev.andrew.repetitobackend.accounts.service;
 import dev.andrew.repetitobackend.accounts.dto.AccountResponse;
 import dev.andrew.repetitobackend.accounts.dto.PublicAccountResponse;
 import dev.andrew.repetitobackend.accounts.dto.PublicProfileResponse;
+import dev.andrew.repetitobackend.accounts.dto.PublicProfileSearchResponse;
 import dev.andrew.repetitobackend.accounts.dto.PublicUserResponse;
 import dev.andrew.repetitobackend.accounts.dto.StudentProfileRequest;
 import dev.andrew.repetitobackend.accounts.dto.TutorProfileRequest;
@@ -29,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -62,10 +64,14 @@ public class AccountService {
     public PublicProfileResponse getPublicProfile(Long accountId) {
         Account requestedAccount = accountRepository.findById(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("Profile not found"));
+        if (!requestedAccount.isPublicProfile()) {
+            throw new IllegalArgumentException("Profile not found");
+        }
         User user = requestedAccount.getUser();
 
         List<Account> accounts = accountRepository.findByUserIdOrderByCreatedAtAsc(user.getId());
         List<PublicAccountResponse> publicAccounts = accounts.stream()
+                .filter(Account::isPublicProfile)
                 .map(account -> PublicAccountResponse.from(
                         account,
                         studentProfileRepository.findByAccountId(account.getId()).orElse(null),
@@ -76,6 +82,7 @@ public class AccountService {
         List<TutorCardResponse> tutorCards = new ArrayList<>();
         List<ReviewResponse> reviews = new ArrayList<>();
         accounts.stream()
+                .filter(Account::isPublicProfile)
                 .filter(account -> account.getType() == AccountType.TUTOR)
                 .forEach(account -> {
                     TutorProfile tutorProfile = tutorProfileRepository.findByAccountId(account.getId()).orElse(null);
@@ -88,6 +95,33 @@ public class AccountService {
                 });
 
         return new PublicProfileResponse(PublicUserResponse.from(user), publicAccounts, tutorCards, reviews);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PublicProfileSearchResponse> searchPublicProfiles(String query, AccountType type) {
+        List<Account> accounts = type == null
+                ? accountRepository.findByPublicProfileTrueOrderByCreatedAtDesc()
+                : accountRepository.findByPublicProfileTrueAndTypeOrderByCreatedAtDesc(type);
+        List<String> tokens = searchTokens(query);
+
+        return accounts.stream()
+                .filter(account -> matchesName(account, tokens))
+                .map(account -> PublicProfileSearchResponse.from(
+                        account,
+                        studentProfileRepository.findByAccountId(account.getId()).orElse(null),
+                        tutorProfileRepository.findByAccountId(account.getId()).orElse(null)
+                ))
+                .toList();
+    }
+
+    public AuthResponse updatePublicProfile(AuthPrincipal principal, boolean publicProfile) {
+        Account account = requireActiveAccount(principal);
+        account.setPublicProfile(publicProfile);
+        accountRepository.save(account);
+
+        User user = userRepository.findById(principal.userId())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        return buildResponse(user, principal.activeAccountId(), currentToken(user, principal));
     }
 
     public Account createAccount(Long userId, AccountType type) {
@@ -242,6 +276,27 @@ public class AccountService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private List<String> searchTokens(String query) {
+        String normalized = trimToNull(query);
+        if (normalized == null) {
+            return List.of();
+        }
+
+        return List.of(normalized.toLowerCase(Locale.ROOT).split("\\s+")).stream()
+                .filter(token -> !token.isBlank())
+                .toList();
+    }
+
+    private boolean matchesName(Account account, List<String> tokens) {
+        if (tokens.isEmpty()) {
+            return true;
+        }
+
+        String fullName = (account.getUser().getFirstName() + " " + account.getUser().getLastName()).toLowerCase(Locale.ROOT);
+        String reverseName = (account.getUser().getLastName() + " " + account.getUser().getFirstName()).toLowerCase(Locale.ROOT);
+        return tokens.stream().allMatch(token -> fullName.contains(token) || reverseName.contains(token));
     }
 
     private AccountResponse toResponse(Account account, boolean active) {

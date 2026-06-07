@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useForm } from "react-hook-form";
 import { Eye, EyeOff, Loader2, X } from "lucide-react";
-import { API_BASE_URL, readErrorMessage, setCookieToken } from "../../shared/api";
+import { API_BASE_URL, formatErrorMessage, readErrorMessage, setCookieToken } from "../../shared/api";
 import { AccountRoleSelect } from "./components";
 
 type AuthMode = "login" | "register" | "select";
@@ -33,6 +33,7 @@ interface AccountView {
   id: number;
   type: AccountType;
   createdAt: string;
+  publicProfile: boolean;
   active: boolean;
   studentProfile: Record<string, unknown> | null;
   tutorProfile: Record<string, unknown> | null;
@@ -129,7 +130,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
 
       finishAuth((await response.json()) as AuthResponse);
     } catch (error) {
-      setServerError(error instanceof Error ? error.message : "Ошибка входа");
+      setServerError(formatErrorMessage(error instanceof Error ? error.message : "", "Ошибка входа"));
     } finally {
       setIsLoading(false);
     }
@@ -162,7 +163,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
 
       finishAuth((await response.json()) as AuthResponse);
     } catch (error) {
-      setServerError(error instanceof Error ? error.message : "Ошибка регистрации");
+      setServerError(formatErrorMessage(error instanceof Error ? error.message : "", "Ошибка регистрации"));
     } finally {
       setIsLoading(false);
     }
@@ -193,7 +194,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
 
       finishAuth((await response.json()) as AuthResponse);
     } catch (error) {
-      setServerError(error instanceof Error ? error.message : "Не удалось выбрать аккаунт");
+      setServerError(formatErrorMessage(error instanceof Error ? error.message : "", "Не удалось выбрать аккаунт"));
     } finally {
       setIsLoading(false);
     }

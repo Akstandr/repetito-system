@@ -30,6 +30,10 @@ public class Account {
     @Column(nullable = false)
     private AccountType type;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean publicProfile = true;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 

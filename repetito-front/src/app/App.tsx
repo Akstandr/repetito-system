@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { LandingPage, PublicProfilePage, TutorCardDetailsPage } from "../features/landing";
+import { LandingPage, PublicProfilePage, PublicProfileSearchPage, TutorCardDetailsPage } from "../features/landing";
 import { AccountPage } from "../features/account/AccountPage";
 
 function getCurrentPath() {
@@ -52,6 +52,10 @@ export default function App() {
   const publicProfileId = getPublicProfileId(path);
   if (publicProfileId !== null) {
     return <PublicProfilePage accountId={publicProfileId} />;
+  }
+
+  if (path === "/search") {
+    return <PublicProfileSearchPage />;
   }
 
   if (

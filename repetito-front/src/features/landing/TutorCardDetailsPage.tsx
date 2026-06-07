@@ -5,6 +5,7 @@ import {
   DEFAULT_SUBJECT_OPTIONS,
   MARKETPLACE_API_BASE_URL,
   fetchSubjectOptions,
+  formatErrorMessage,
   getAuthHeaders,
   readErrorMessage,
 } from "../../shared/api";
@@ -58,7 +59,7 @@ function formatDate(value: string) {
 }
 
 function formatError(error: unknown, fallback: string) {
-  return error instanceof Error ? error.message : fallback;
+  return formatErrorMessage(error instanceof Error ? error.message : "", fallback);
 }
 
 function getStudentName(review: TutorReview) {

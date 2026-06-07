@@ -5,6 +5,7 @@ import {
   DEFAULT_SUBJECT_OPTIONS,
   MARKETPLACE_API_BASE_URL,
   fetchSubjectOptions,
+  formatErrorMessage,
   getAuthHeaders,
   getCookieValue,
   readErrorMessage,
@@ -40,7 +41,7 @@ function navigateTo(path: string) {
 }
 
 function formatError(error: unknown, fallback: string) {
-  return error instanceof Error ? error.message : fallback;
+  return formatErrorMessage(error instanceof Error ? error.message : "", fallback);
 }
 
 export function LandingPage() {
@@ -369,6 +370,24 @@ export function LandingPage() {
         </main>
       ) : (
         <main className="mx-auto max-w-7xl px-3 py-6 sm:px-6 lg:py-12">
+          <section className="mb-5 rounded-[24px] border border-border bg-card p-4 shadow-sm sm:rounded-[28px] sm:p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="max-w-2xl">
+                <h2 className="text-2xl font-semibold">Поиск пользователей</h2>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Откройте отдельную страницу, чтобы найти публичные профили репетиторов и учеников по имени.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigateTo("/search")}
+                className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm text-primary-foreground transition hover:bg-primary/90"
+              >
+                Перейти к поиску
+              </button>
+            </div>
+          </section>
+
           <section className="overflow-hidden rounded-[24px] border border-border bg-card p-4 shadow-sm sm:rounded-[28px] sm:p-6">
             <TutorSearchPanel
               subject={subject}
