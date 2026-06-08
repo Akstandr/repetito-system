@@ -85,6 +85,7 @@ const ERROR_TRANSLATIONS: Array<[RegExp, string]> = [
   [/price must be positive/i, "Цена должна быть больше нуля"],
   [/subject must not be blank/i, "Укажите предмет"],
   [/meeting url must start with http:\/\/ or https:\/\//i, "Ссылка на созвон должна начинаться с http:// или https://"],
+  [/meeting url is required/i, "Обязательно вставьте ссылку на созвон"],
   [/cannot delete card with applications/i, "Нельзя удалить карточку, по которой уже есть заявки"],
   [/cannot delete card with lessons/i, "Нельзя удалить карточку, по которой уже есть занятия"],
   [/tutor account not found/i, "Репетитор не найден"],
@@ -114,6 +115,7 @@ const FIELD_LABELS: Record<string, string> = {
   tutorAccountId: "Репетитор",
   studentAccountId: "Ученик",
   applicationId: "Заявка",
+  videoMeetingUrl: "Ссылка на созвон",
 };
 
 function humanizeValidationMessage(message: string) {
@@ -158,6 +160,9 @@ function humanizeValidationMessage(message: string) {
     }
     if (lowerField === "applicationid") {
       return "Выберите заявку";
+    }
+    if (lowerField === "videomeetingurl") {
+      return "Обязательно вставьте ссылку на созвон";
     }
     return `${label}: заполните это поле`;
   }

@@ -314,6 +314,25 @@ function errorText(error: unknown, fallback: string) {
     return formatErrorMessage(error instanceof Error ? error.message : "", fallback);
 }
 
+function normalizeVideoMeetingUrl(value: string | null | undefined) {
+    const trimmed = (value ?? "").trim();
+    if (!trimmed) {
+        throw new Error("Обязательно вставьте ссылку на созвон");
+    }
+
+    if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+        throw new Error("Ссылка на созвон должна начинаться с http:// или https://");
+    }
+
+    try {
+        new URL(trimmed);
+    } catch {
+        throw new Error("Введите корректную ссылку на созвон");
+    }
+
+    return trimmed;
+}
+
 function emptyStudentProfile(): StudentProfileForm {
     return { description: "", subjects: "", gradeLevel: "", format: "" };
 }
@@ -1329,6 +1348,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
     async function createLesson() {
         setIsBusy(true);
         try {
+            const videoMeetingUrl = normalizeVideoMeetingUrl(lessonDraft.videoMeetingUrl);
             const response = await fetch(`${MARKETPLACE_API_BASE_URL}/lessons`, {
                 method: "POST",
                 headers: {
@@ -1341,7 +1361,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                     startDateTime: new Date(lessonDraft.startDateTime).toISOString(),
                     durationMinutes: Number(lessonDraft.durationMinutes),
                     price: Number(lessonDraft.price),
-                    videoMeetingUrl: lessonDraft.videoMeetingUrl.trim() || null,
+                    videoMeetingUrl,
                 }),
             });
             if (!response.ok) {
@@ -1360,6 +1380,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
     async function updateLesson(lessonId: number) {
         setIsBusy(true);
         try {
+            const videoMeetingUrl = normalizeVideoMeetingUrl(lessonEditDraft.videoMeetingUrl);
             const response = await fetch(`${MARKETPLACE_API_BASE_URL}/lessons/${lessonId}`, {
                 method: "PATCH",
                 headers: {
@@ -1370,7 +1391,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                     startDateTime: new Date(lessonEditDraft.startDateTime).toISOString(),
                     durationMinutes: Number(lessonEditDraft.durationMinutes),
                     price: Number(lessonEditDraft.price),
-                    videoMeetingUrl: lessonEditDraft.videoMeetingUrl.trim() || null,
+                    videoMeetingUrl,
                 }),
             });
             if (!response.ok) {

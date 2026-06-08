@@ -88,7 +88,7 @@ public class ApiExceptionHandler {
             return "Стоимость занятия должна быть больше нуля";
         }
         if (objectName.contains("lesson") && field.equals("videoMeetingUrl")) {
-            return "Ссылка на созвон слишком длинная";
+            return code.equals("NotBlank") ? "Обязательно вставьте ссылку на созвон" : "Ссылка на созвон слишком длинная";
         }
         if (objectName.contains("tutorcard") && field.equals("title")) {
             return "Укажите название карточки";
@@ -187,6 +187,7 @@ public class ApiExceptionHandler {
             case "Subject must not be blank" -> "Укажите предмет";
             case "Lesson not found" -> "Занятие не найдено";
             case "Meeting URL must start with http:// or https://" -> "Ссылка на созвон должна начинаться с http:// или https://";
+            case "Meeting URL is required" -> "Обязательно вставьте ссылку на созвон";
             case "Cannot delete card with applications" -> "Нельзя удалить карточку, по которой уже есть заявки";
             case "Cannot delete card with lessons" -> "Нельзя удалить карточку, по которой уже есть занятия";
             case "Tutor account not found" -> "Репетитор не найден";

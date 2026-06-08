@@ -26,7 +26,6 @@ public class LessonService {
     private final LessonRepository lessonRepository;
     private final TutorApplicationRepository tutorApplicationRepository;
     private final AccountService accountService;
-    private final MeetingService meetingService;
 
     @Transactional
     public LessonResponse create(AuthPrincipal principal, LessonRequest request) {
@@ -49,15 +48,6 @@ public class LessonService {
 
         String subject = application.getTutorCard().getSubject();
         String videoMeetingUrl = normalizeMeetingUrl(request.getVideoMeetingUrl());
-        if (videoMeetingUrl == null) {
-            videoMeetingUrl = meetingService.createLessonMeeting(
-                    new MeetingService.LessonMeetingData(
-                            subject,
-                            request.getStartDateTime(),
-                            request.getDurationMinutes()
-                    )
-            );
-        }
 
         Lesson lesson = lessonRepository.save(Lesson.builder()
                 .tutorAccount(tutorAccount)
@@ -126,7 +116,7 @@ public class LessonService {
 
     private String normalizeMeetingUrl(String value) {
         if (value == null || value.isBlank()) {
-            return null;
+            throw new IllegalArgumentException("Meeting URL is required");
         }
 
         String trimmed = value.trim();
