@@ -46,15 +46,13 @@ public class LessonService {
         if (request.getPrice().signum() <= 0) {
             throw new IllegalArgumentException("Price must be positive");
         }
-        if (request.getSubject() == null || request.getSubject().isBlank()) {
-            throw new IllegalArgumentException("Subject must not be blank");
-        }
 
+        String subject = application.getTutorCard().getSubject();
         String videoMeetingUrl = normalizeMeetingUrl(request.getVideoMeetingUrl());
         if (videoMeetingUrl == null) {
             videoMeetingUrl = meetingService.createLessonMeeting(
                     new MeetingService.LessonMeetingData(
-                            request.getSubject().trim(),
+                            subject,
                             request.getStartDateTime(),
                             request.getDurationMinutes()
                     )
@@ -65,7 +63,7 @@ public class LessonService {
                 .tutorAccount(tutorAccount)
                 .studentAccount(application.getStudentAccount())
                 .application(application)
-                .subject(request.getSubject().trim())
+                .subject(subject)
                 .startDateTime(request.getStartDateTime())
                 .durationMinutes(request.getDurationMinutes())
                 .price(request.getPrice())
@@ -85,7 +83,7 @@ public class LessonService {
     @Transactional
     public LessonResponse update(AuthPrincipal principal, Long lessonId, LessonUpdateRequest request) {
         Lesson lesson = requireTutorLesson(principal, lessonId);
-        applyEditableFields(lesson, request.getSubject(), request.getStartDateTime(), request.getDurationMinutes(), request.getPrice(), request.getVideoMeetingUrl());
+        applyEditableFields(lesson, request.getStartDateTime(), request.getDurationMinutes(), request.getPrice(), request.getVideoMeetingUrl());
         lesson.setStatus(LessonStatus.PLANNED);
         return LessonResponse.from(lessonRepository.save(lesson));
     }
@@ -108,7 +106,6 @@ public class LessonService {
 
     private void applyEditableFields(
             Lesson lesson,
-            String subject,
             java.time.Instant startDateTime,
             Integer durationMinutes,
             java.math.BigDecimal price,
@@ -120,11 +117,7 @@ public class LessonService {
         if (price.signum() <= 0) {
             throw new IllegalArgumentException("Price must be positive");
         }
-        if (subject == null || subject.isBlank()) {
-            throw new IllegalArgumentException("Subject must not be blank");
-        }
 
-        lesson.setSubject(subject.trim());
         lesson.setStartDateTime(startDateTime);
         lesson.setDurationMinutes(durationMinutes);
         lesson.setPrice(price);

@@ -1338,7 +1338,6 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                 body: JSON.stringify({
                     studentAccountId: Number(lessonDraft.studentAccountId),
                     applicationId: Number(lessonDraft.applicationId),
-                    subject: lessonDraft.subject,
                     startDateTime: new Date(lessonDraft.startDateTime).toISOString(),
                     durationMinutes: Number(lessonDraft.durationMinutes),
                     price: Number(lessonDraft.price),
@@ -1368,7 +1367,6 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                     ...getAuthHeaders(),
                 },
                 body: JSON.stringify({
-                    subject: lessonEditDraft.subject,
                     startDateTime: new Date(lessonEditDraft.startDateTime).toISOString(),
                     durationMinutes: Number(lessonEditDraft.durationMinutes),
                     price: Number(lessonEditDraft.price),
@@ -2412,14 +2410,12 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                                 ))}
                                             </select>
                                         </label>
-                                        <label className="block">
-                                            <span className="text-sm text-muted-foreground">Предмет</span>
-                                            <input
-                                                value={lessonDraft.subject}
-                                                onChange={(event) => setLessonDraft((current) => ({ ...current, subject: event.target.value }))}
-                                                className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
-                                            />
-                                        </label>
+                                        <div className="rounded-2xl border border-border bg-card/60 p-4 text-sm">
+                                            <div className="text-muted-foreground">Предмет</div>
+                                            <div className="mt-1 font-medium">
+                                                {lessonDraft.subject ? subjectLabel(lessonDraft.subject) : "Будет взят из карточки после выбора ученика"}
+                                            </div>
+                                        </div>
                                         <label className="block">
                                             <span className="text-sm text-muted-foreground">Дата и время</span>
                                             <input
@@ -2454,7 +2450,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                             <input
                                                 value={lessonDraft.videoMeetingUrl}
                                                 onChange={(event) => setLessonDraft((current) => ({ ...current, videoMeetingUrl: event.target.value }))}
-                                                placeholder="https://telemost.yandex.ru/..."
+                                                placeholder="Например: https://telemost.yandex.ru/..."
                                                 className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
                                             />
                                         </label>
@@ -2605,14 +2601,6 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                                     <div className="mt-4 rounded-2xl border border-border bg-secondary/40 p-4">
                                                         <div className="grid gap-4 md:grid-cols-2">
                                                             <label className="block">
-                                                                <span className="text-sm text-muted-foreground">Предмет</span>
-                                                                <input
-                                                                    value={lessonEditDraft.subject}
-                                                                    onChange={(event) => setLessonEditDraft((current) => ({ ...current, subject: event.target.value }))}
-                                                                    className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
-                                                                />
-                                                            </label>
-                                                            <label className="block">
                                                                 <span className="text-sm text-muted-foreground">Дата и время</span>
                                                                 <input
                                                                     type="datetime-local"
@@ -2646,7 +2634,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                                                 <input
                                                                     value={lessonEditDraft.videoMeetingUrl}
                                                                     onChange={(event) => setLessonEditDraft((current) => ({ ...current, videoMeetingUrl: event.target.value }))}
-                                                                    placeholder="https://telemost.yandex.ru/..."
+                                                                    placeholder="Например: https://telemost.yandex.ru/..."
                                                                     className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
                                                                 />
                                                             </label>
