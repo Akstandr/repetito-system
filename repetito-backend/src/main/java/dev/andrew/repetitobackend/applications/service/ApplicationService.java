@@ -36,7 +36,7 @@ public class ApplicationService {
                 .orElseThrow(() -> new IllegalArgumentException("Tutor card not found"));
 
         Account tutorAccount = tutorCard.getTutorAccount();
-        if (studentAccount.getId().equals(tutorAccount.getId())) {
+        if (studentAccount.getUser().getId().equals(tutorAccount.getUser().getId())) {
             throw new IllegalArgumentException("Cannot apply to own card");
         }
 

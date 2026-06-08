@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, Search, UserRound } from "lucide-react";
-import { API_BASE_URL, formatErrorMessage, readErrorMessage } from "../../shared/api";
+import { API_BASE_URL, formatErrorMessage, getAuthHeaders, readErrorMessage } from "../../shared/api";
 import { ThemeToggle } from "../../shared/ThemeToggle";
+import { useAutoClearMessage } from "../../shared/useAutoClearMessage";
 
 type PublicProfileTypeFilter = "TUTOR" | "STUDENT" | "";
 
@@ -31,6 +32,8 @@ export function PublicProfileSearchPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useAutoClearMessage(error, setError);
+
   async function searchProfiles() {
     setIsLoading(true);
     setError(null);
@@ -44,7 +47,9 @@ export function PublicProfileSearchPage() {
         params.set("type", typeFilter);
       }
 
-      const response = await fetch(`${API_BASE_URL}/accounts/public?${params.toString()}`);
+      const response = await fetch(`${API_BASE_URL}/accounts/public?${params.toString()}`, {
+        headers: getAuthHeaders(),
+      });
       if (!response.ok) {
         throw new Error(await readErrorMessage(response, "Не удалось загрузить публичные профили"));
       }

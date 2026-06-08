@@ -21,6 +21,7 @@ public interface TutorCardRepository extends JpaRepository<TutorCard, Long> {
                     where card.isActive = true
                       and (:subject is null or lower(card.subject) = :subject)
                       and (:grade is null or grade = :grade)
+                      and (:excludedUserId is null or card.tutorAccount.user.id <> :excludedUserId)
                     """,
             countQuery = """
                     select count(distinct card) from TutorCard card
@@ -28,9 +29,15 @@ public interface TutorCardRepository extends JpaRepository<TutorCard, Long> {
                     where card.isActive = true
                       and (:subject is null or lower(card.subject) = :subject)
                       and (:grade is null or grade = :grade)
+                      and (:excludedUserId is null or card.tutorAccount.user.id <> :excludedUserId)
                     """
     )
-    Page<TutorCard> searchActiveCards(@Param("subject") String subject, @Param("grade") Integer grade, Pageable pageable);
+    Page<TutorCard> searchActiveCards(
+            @Param("subject") String subject,
+            @Param("grade") Integer grade,
+            @Param("excludedUserId") Long excludedUserId,
+            Pageable pageable
+    );
 
     @EntityGraph(attributePaths = {"tutorAccount", "tutorAccount.user"})
     List<TutorCard> findByTutorAccountIdOrderByCreatedAtDesc(Long tutorAccountId);

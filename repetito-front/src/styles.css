@@ -157,6 +157,28 @@
     font-family: inherit;
   }
 
+  button,
+  a,
+  [role="button"] {
+    transition-duration: 220ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    transition-property: color, background-color, border-color, opacity, box-shadow, translate, scale, transform;
+  }
+
+  button:not(:disabled):active,
+  a:active,
+  [role="button"]:active {
+    scale: 0.98;
+  }
+
+  input,
+  textarea,
+  select {
+    transition-duration: 220ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    transition-property: color, background-color, border-color, box-shadow, opacity;
+  }
+
   h1 {
     font-size: var(--text-2xl);
     font-weight: var(--font-weight-medium);
@@ -248,6 +270,97 @@
 @media (prefers-reduced-motion: reduce) {
   .app-gradient-bg {
     animation: none;
+  }
+}
+
+.motion-overlay {
+  animation: motion-overlay-in 180ms ease-out both;
+}
+
+.motion-modal {
+  animation: motion-modal-in 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: center;
+}
+
+.motion-centered-modal {
+  animation: motion-centered-modal-in 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: center;
+}
+
+.motion-dropdown {
+  animation: motion-dropdown-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: top right;
+}
+
+.motion-panel-left {
+  transition-duration: 320ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.motion-surface {
+  transition-duration: 240ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  transition-property: color, background-color, border-color, box-shadow, opacity, translate, scale, transform;
+}
+
+@keyframes motion-overlay-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes motion-modal-in {
+  from {
+    opacity: 0;
+    scale: 0.94;
+    translate: 0 10px;
+  }
+
+  to {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes motion-centered-modal-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 10px)) scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes motion-dropdown-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+    translate: 0 -6px;
+  }
+
+  to {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
   }
 }
 

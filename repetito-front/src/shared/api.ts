@@ -123,10 +123,42 @@ function humanizeValidationMessage(message: string) {
   }
 
   const [, field, rawRule] = fieldMatch;
-  const label = FIELD_LABELS[field] ?? "Поле";
+  const normalizedField = field.trim();
+  const lowerField = normalizedField.toLowerCase();
+  const label = FIELD_LABELS[normalizedField] ?? FIELD_LABELS[lowerField] ?? "Поле";
   const rule = rawRule.toLowerCase();
 
   if (rule.includes("must not be blank") || rule.includes("must not be empty") || rule.includes("must not be null")) {
+    if (lowerField === "text") {
+      return "Нельзя отправить пустое сообщение";
+    }
+    if (lowerField === "message") {
+      return "Напишите сообщение";
+    }
+    if (lowerField === "email") {
+      return "Введите email";
+    }
+    if (lowerField === "password") {
+      return "Введите пароль";
+    }
+    if (lowerField === "firstname") {
+      return "Введите имя";
+    }
+    if (lowerField === "title") {
+      return "Укажите название";
+    }
+    if (lowerField === "subject") {
+      return "Укажите предмет";
+    }
+    if (lowerField === "studentaccountid") {
+      return "Выберите ученика";
+    }
+    if (lowerField === "tutoraccountid") {
+      return "Выберите репетитора";
+    }
+    if (lowerField === "applicationid") {
+      return "Выберите заявку";
+    }
     return `${label}: заполните это поле`;
   }
   if (rule.includes("must be greater than 0") || rule.includes("positive")) {

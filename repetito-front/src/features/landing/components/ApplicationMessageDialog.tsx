@@ -30,8 +30,8 @@ export function ApplicationMessageDialog({
   const trimmedMessage = message.trim();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 px-4 py-6">
-      <div className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-[24px] border border-border bg-card p-4 shadow-xl sm:rounded-[28px] sm:p-6">
+    <div className="motion-overlay fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 px-4 py-6">
+      <div className="motion-modal max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-[24px] border border-border bg-card p-4 shadow-xl sm:rounded-[28px] sm:p-6">
         <div className="mb-4">
           <h2 className="text-xl font-semibold sm:text-2xl">Сопроводительное письмо</h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">

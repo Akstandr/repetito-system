@@ -13,6 +13,7 @@ import {
 import type { SubjectOption } from "../../shared/api";
 import { ThemeToggle } from "../../shared/ThemeToggle";
 import { useAuthSession } from "../../shared/useAuthSession";
+import { useAutoClearMessage } from "../../shared/useAutoClearMessage";
 import { ApplicationMessageDialog, GuestLanding, TutorDashboard, TutorSearchPanel, TutorSearchResults } from "./components";
 import type { TutorCardPageResponse } from "./types";
 
@@ -74,6 +75,8 @@ export function LandingPage() {
   const showAccountSelectionNotice = isAuthenticated && !isStudent && !showTutorDashboard;
   const userLabel = `${session?.user?.firstName || session?.user?.email || "Пользователь"}${session?.user?.lastName ? ` ${session.user.lastName}` : ""}`.trim();
 
+  useAutoClearMessage(error, setError);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -113,7 +116,9 @@ export function LandingPage() {
       params.set("page", String(nextPage));
       params.set("limit", String(limit));
 
-      const response = await fetch(`${MARKETPLACE_API_BASE_URL}/tutor-cards?${params.toString()}`);
+      const response = await fetch(`${MARKETPLACE_API_BASE_URL}/tutor-cards?${params.toString()}`, {
+        headers: getAuthHeaders(),
+      });
       if (!response.ok) {
         throw new Error(await readErrorMessage(response, "Не удалось загрузить карточки репетиторов"));
       }
@@ -301,7 +306,7 @@ export function LandingPage() {
                 </div>
 
                 {isGuestMenuOpen && (
-                  <div className="absolute right-0 top-12 z-40 w-48 rounded-2xl border border-border bg-card p-2 shadow-xl sm:hidden">
+                  <div className="motion-dropdown absolute right-0 top-12 z-40 w-48 rounded-2xl border border-border bg-card p-2 shadow-xl sm:hidden">
                     <button
                       type="button"
                       onClick={() => {

@@ -30,6 +30,7 @@ import {
 import type { SubjectOption } from "../../shared/api";
 import { markdownToSafeHtml } from "../../shared/markdown";
 import { AuthResponse, useAuthSession } from "../../shared/useAuthSession";
+import { useAutoClearMessage } from "../../shared/useAutoClearMessage";
 import { AccountHeader, AccountSidebar } from "./components";
 
 type AccountType = "student" | "tutor";
@@ -529,6 +530,9 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
 
     const hasStudentAccount = accounts.some((account) => account.type === "student");
     const hasTutorAccount = accounts.some((account) => account.type === "tutor");
+
+    useAutoClearMessage(error, setError);
+
     const studentAccountIds = useMemo(
         () => new Set(accounts.filter((account) => account.type === "student").map((account) => account.id)),
         [accounts],
@@ -1274,6 +1278,12 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
 
     async function sendMessage() {
         if (!selectedConversationId) return;
+        const text = messageDraft.text.trim();
+        if (!text) {
+            setError("Нельзя отправить пустое сообщение");
+            return;
+        }
+
         setIsBusy(true);
         try {
             const response = await fetch(`${MARKETPLACE_API_BASE_URL}/conversations/${selectedConversationId}/messages`, {
@@ -1282,7 +1292,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                     "Content-Type": "application/json",
                     ...getAuthHeaders(),
                 },
-                body: JSON.stringify(messageDraft),
+                body: JSON.stringify({ text }),
             });
             if (!response.ok) {
                 throw new Error(await readErrorMessage(response, "Не удалось отправить сообщение"));
@@ -1470,11 +1480,11 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                         type="button"
                         aria-label="Закрыть меню"
                         onClick={closeMobileNav}
-                        className={`absolute inset-0 bg-foreground/30 transition-opacity duration-200 ease-out ${isMobileNavVisible ? "opacity-100" : "opacity-0"
+                        className={`absolute inset-0 bg-foreground/30 transition-opacity duration-300 ease-out ${isMobileNavVisible ? "opacity-100" : "opacity-0"
                             }`}
                     />
                     <div
-                        className={`absolute left-0 top-0 h-full w-[min(86vw,320px)] overflow-y-auto bg-background p-3 shadow-2xl transition-transform duration-200 ease-out ${isMobileNavVisible ? "translate-x-0" : "-translate-x-full"
+                        className={`motion-panel-left absolute left-0 top-0 h-full w-[min(86vw,320px)] overflow-y-auto bg-background p-3 shadow-2xl transition-transform ${isMobileNavVisible ? "translate-x-0" : "-translate-x-full"
                             }`}
                     >
                         <AccountSidebar
@@ -1548,7 +1558,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                         <section className="rounded-2xl border border-border bg-card p-6">
                             <h1 className="mb-2 text-2xl font-semibold">Выберите аккаунт</h1>
                             <p className="max-w-2xl text-muted-foreground">
-                                У этого пользователя несколько аккаунтов. Выберите, какой кабинет открыть сейчас.
+                                У вас несколько аккаунтов. Выберите, какой кабинет открыть сейчас.
                             </p>
 
                             <div className="mt-6 grid gap-4 md:grid-cols-2">
@@ -1616,11 +1626,10 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                     type="button"
                                     disabled={isBusy}
                                     onClick={() => void updatePublicProfile(!activeAccount.publicProfile)}
-                                    className={`inline-flex min-w-36 items-center justify-center rounded-xl px-4 py-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                                        activeAccount.publicProfile
-                                            ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                                            : "border border-border bg-card text-muted-foreground hover:bg-secondary"
-                                    }`}
+                                    className={`inline-flex min-w-36 items-center justify-center rounded-xl px-4 py-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${activeAccount.publicProfile
+                                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                        : "border border-border bg-card text-muted-foreground hover:bg-secondary"
+                                        }`}
                                 >
                                     {activeAccount.publicProfile ? "Публичный" : "Скрыт"}
                                 </button>
@@ -1648,8 +1657,13 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                         <label className="block">
                                             <span className="text-sm text-muted-foreground">Класс / курс</span>
                                             <input
+                                                type="number"
+                                                min={1}
+                                                max={11}
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
                                                 value={studentProfile.gradeLevel}
-                                                onChange={(event) => setStudentProfile((current) => ({ ...current, gradeLevel: event.target.value }))}
+                                                onChange={(event) => setStudentProfile((current) => ({ ...current, gradeLevel: digitsOnly(event.target.value) }))}
                                                 className="mt-1 w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
                                             />
                                         </label>
@@ -2325,7 +2339,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                         />
                                         <button
                                             type="button"
-                                            disabled={isBusy}
+                                            disabled={isBusy || !messageDraft.text.trim()}
                                             onClick={() => void sendMessage()}
                                             className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                                         >
@@ -2484,8 +2498,8 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                                 type="button"
                                                 onClick={() => setLessonFilter(filter.key)}
                                                 className={`rounded-xl px-4 py-2 text-sm transition ${lessonFilter === filter.key
-                                                        ? "bg-primary text-primary-foreground"
-                                                        : "border border-border bg-card hover:bg-secondary"
+                                                    ? "bg-primary text-primary-foreground"
+                                                    : "border border-border bg-card hover:bg-secondary"
                                                     }`}
                                             >
                                                 {filter.label} · {filter.count}

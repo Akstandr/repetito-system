@@ -4,6 +4,7 @@ import { API_BASE_URL, MARKETPLACE_API_BASE_URL, formatErrorMessage, getAuthHead
 import { markdownToSafeHtml } from "../../shared/markdown";
 import { ThemeToggle } from "../../shared/ThemeToggle";
 import { useAuthSession } from "../../shared/useAuthSession";
+import { useAutoClearMessage } from "../../shared/useAutoClearMessage";
 import type { TutorCard, TutorReview } from "./types";
 
 type AccountType = "student" | "tutor" | "STUDENT" | "TUTOR";
@@ -99,6 +100,8 @@ export function PublicProfilePage({ accountId }: { accountId: number }) {
   const [error, setError] = useState<string | null>(null);
   const [contactError, setContactError] = useState<string | null>(null);
   const [isContacting, setIsContacting] = useState(false);
+
+  useAutoClearMessage(contactError, setContactError);
 
   useEffect(() => {
     let cancelled = false;

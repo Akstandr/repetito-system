@@ -1,6 +1,7 @@
 ﻿import { ChevronRight, BookOpen, Calendar, Edit3, GraduationCap, Loader2, MessageCircle, Star, Users } from "lucide-react";
 import { useEffect, useState, type ComponentType } from "react";
 import { MARKETPLACE_API_BASE_URL, formatErrorMessage, getAuthHeaders, readErrorMessage } from "../../../shared/api";
+import { useAutoClearMessage } from "../../../shared/useAutoClearMessage";
 
 interface ConversationSummary {
   unreadMessagesCount?: number;
@@ -46,6 +47,8 @@ export function TutorDashboard({
   const [dashboardStats, setDashboardStats] = useState<TutorDashboardStats>({});
   const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [dashboardLoading, setDashboardLoading] = useState(false);
+
+  useAutoClearMessage(dashboardError, setDashboardError);
 
   useEffect(() => {
     let cancelled = false;

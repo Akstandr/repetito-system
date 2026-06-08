@@ -34,9 +34,10 @@ public class AccountController {
     @GetMapping("/public")
     public ResponseEntity<List<PublicProfileSearchResponse>> searchPublicProfiles(
             @RequestParam(required = false) String query,
-            @RequestParam(required = false) AccountType type
+            @RequestParam(required = false) AccountType type,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(accountService.searchPublicProfiles(query, type));
+        return ResponseEntity.ok(accountService.searchPublicProfiles(query, type, currentUserId(authentication)));
     }
 
     @PostMapping
@@ -72,5 +73,12 @@ public class AccountController {
                 (AuthPrincipal) authentication.getPrincipal(),
                 request.getPublicProfile()
         ));
+    }
+
+    private Long currentUserId(Authentication authentication) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof AuthPrincipal principal)) {
+            return null;
+        }
+        return principal.userId();
     }
 }

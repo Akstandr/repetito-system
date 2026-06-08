@@ -26,9 +26,10 @@ public class TutorCardController {
             @RequestParam(required = false) String subject,
             @RequestParam(required = false) Integer grade,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int limit
+            @RequestParam(defaultValue = "10") int limit,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(tutorCardService.search(subject, grade, page, limit));
+        return ResponseEntity.ok(tutorCardService.search(subject, grade, page, limit, currentUserId(authentication)));
     }
 
     @GetMapping("/my")
@@ -62,5 +63,12 @@ public class TutorCardController {
     public ResponseEntity<Void> delete(Authentication authentication, @PathVariable Long id) {
         tutorCardService.delete((AuthPrincipal) authentication.getPrincipal(), id);
         return ResponseEntity.noContent().build();
+    }
+
+    private Long currentUserId(Authentication authentication) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof AuthPrincipal principal)) {
+            return null;
+        }
+        return principal.userId();
     }
 }

@@ -98,13 +98,14 @@ public class AccountService {
     }
 
     @Transactional(readOnly = true)
-    public List<PublicProfileSearchResponse> searchPublicProfiles(String query, AccountType type) {
+    public List<PublicProfileSearchResponse> searchPublicProfiles(String query, AccountType type, Long excludedUserId) {
         List<Account> accounts = type == null
                 ? accountRepository.findByPublicProfileTrueOrderByCreatedAtDesc()
                 : accountRepository.findByPublicProfileTrueAndTypeOrderByCreatedAtDesc(type);
         List<String> tokens = searchTokens(query);
 
         return accounts.stream()
+                .filter(account -> excludedUserId == null || !account.getUser().getId().equals(excludedUserId))
                 .filter(account -> matchesName(account, tokens))
                 .map(account -> PublicProfileSearchResponse.from(
                         account,

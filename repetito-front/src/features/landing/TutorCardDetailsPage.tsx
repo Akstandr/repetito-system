@@ -13,6 +13,7 @@ import type { SubjectOption } from "../../shared/api";
 import { markdownToSafeHtml } from "../../shared/markdown";
 import { ThemeToggle } from "../../shared/ThemeToggle";
 import { useAuthSession } from "../../shared/useAuthSession";
+import { useAutoClearMessage } from "../../shared/useAutoClearMessage";
 import { ApplicationMessageDialog } from "./components";
 import type { TutorCard, TutorReview } from "./types";
 
@@ -121,6 +122,8 @@ export function TutorCardDetailsPage({ cardId }: { cardId: number }) {
   const [hasApplied, setHasApplied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  useAutoClearMessage(error, setError);
 
   const accounts = session?.accounts ?? [];
   const activeAccount = session?.activeAccount ?? accounts.find((account) => account.active) ?? null;
@@ -374,9 +377,8 @@ export function TutorCardDetailsPage({ cardId }: { cardId: number }) {
           <div className="space-y-6">
             {(error || success) && (
               <div
-                className={`rounded-2xl border p-4 text-sm ${
-                  error ? "border-destructive/20 bg-destructive/10 text-destructive" : "border-emerald-200 bg-emerald-50 text-emerald-800"
-                }`}
+                className={`rounded-2xl border p-4 text-sm ${error ? "border-destructive/20 bg-destructive/10 text-destructive" : "border-emerald-200 bg-emerald-50 text-emerald-800"
+                  }`}
               >
                 {error || success}
               </div>

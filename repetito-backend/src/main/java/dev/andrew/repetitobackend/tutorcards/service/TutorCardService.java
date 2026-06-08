@@ -39,12 +39,13 @@ public class TutorCardService {
     private final TutorProfileRepository tutorProfileRepository;
 
     @Transactional(readOnly = true)
-    public TutorCardPageResponse search(String subject, Integer grade, int page, int limit) {
+    public TutorCardPageResponse search(String subject, Integer grade, int page, int limit, Long excludedUserId) {
         int normalizedPage = Math.max(page, 1);
         int normalizedLimit = Math.min(Math.max(limit, 1), 50);
         var pageResult = tutorCardRepository.searchActiveCards(
                 normalizeSubject(subject),
                 grade,
+                excludedUserId,
                 PageRequest.of(normalizedPage - 1, normalizedLimit, Sort.by(Sort.Direction.DESC, "createdAt"))
         );
 
