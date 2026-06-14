@@ -12,6 +12,7 @@ export function TutorSearchResults({
   onPrevious,
   onNext,
   onApply,
+  onMessage,
   onOpenCard,
   isApplying,
   appliedTutorCardIds,
@@ -25,6 +26,7 @@ export function TutorSearchResults({
   onPrevious: () => void;
   onNext: () => void;
   onApply: (cardId: number) => void;
+  onMessage: (card: TutorCardPageResponse["items"][number]) => void;
   onOpenCard: (cardId: number) => void;
   isApplying: number | null;
   appliedTutorCardIds: Set<number>;
@@ -75,6 +77,7 @@ export function TutorSearchResults({
                 key={card.id}
                 card={card}
                 onApply={onApply}
+                onMessage={onMessage}
                 onOpen={onOpenCard}
                 isApplying={isApplying === card.id}
                 hasApplied={appliedTutorCardIds.has(card.id)}

@@ -5,6 +5,7 @@ import dev.andrew.repetitobackend.accounts.model.AccountType;
 import dev.andrew.repetitobackend.accounts.repository.AccountRepository;
 import dev.andrew.repetitobackend.accounts.service.AccountService;
 import dev.andrew.repetitobackend.tutorcards.model.TutorCard;
+import dev.andrew.repetitobackend.tutorcards.model.TutorCardModerationStatus;
 import dev.andrew.repetitobackend.tutorcards.model.TutorCardFormat;
 import dev.andrew.repetitobackend.tutorcards.repository.TutorCardRepository;
 import dev.andrew.repetitobackend.users.model.User;
@@ -117,6 +118,7 @@ public class TestDataSeeder implements ApplicationRunner {
                     .supportedGrades(new LinkedHashSet<>(grades))
                     .format(format)
                     .isActive(true)
+                    .moderationStatus(TutorCardModerationStatus.APPROVED)
                     .build());
         }
     }

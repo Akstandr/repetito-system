@@ -11,105 +11,15 @@ import java.util.Optional;
 
 public interface ConversationRepository extends JpaRepository<Conversation, Long> {
 
-    @EntityGraph(attributePaths = {
-            "application",
-            "application.tutorCard",
-            "application.tutorCard.tutorAccount",
-            "application.tutorCard.tutorAccount.user",
-            "application.studentAccount",
-            "application.studentAccount.user",
-            "application.tutorAccount",
-            "application.tutorAccount.user",
-            "studentAccount",
-            "studentAccount.user",
-            "tutorAccount",
-            "tutorAccount.user"
-    })
+    @EntityGraph(attributePaths = {"application", "application.tutorCard", "participantAUser", "participantAAccount", "participantBUser", "participantBAccount", "studentAccount", "tutorAccount"})
     Optional<Conversation> findByApplicationId(Long applicationId);
 
-    @EntityGraph(attributePaths = {
-            "application",
-            "application.tutorCard",
-            "application.tutorCard.tutorAccount",
-            "application.tutorCard.tutorAccount.user",
-            "application.studentAccount",
-            "application.studentAccount.user",
-            "application.tutorAccount",
-            "application.tutorAccount.user",
-            "studentAccount",
-            "studentAccount.user",
-            "tutorAccount",
-            "tutorAccount.user"
-    })
-    List<Conversation> findByStudentAccountIdOrderByCreatedAtDesc(Long studentAccountId);
-
-    @EntityGraph(attributePaths = {
-            "application",
-            "application.tutorCard",
-            "application.tutorCard.tutorAccount",
-            "application.tutorCard.tutorAccount.user",
-            "application.studentAccount",
-            "application.studentAccount.user",
-            "application.tutorAccount",
-            "application.tutorAccount.user",
-            "studentAccount",
-            "studentAccount.user",
-            "tutorAccount",
-            "tutorAccount.user"
-    })
-    List<Conversation> findByTutorAccountIdOrderByCreatedAtDesc(Long tutorAccountId);
-
-    @EntityGraph(attributePaths = {
-            "application",
-            "application.tutorCard",
-            "application.tutorCard.tutorAccount",
-            "application.tutorCard.tutorAccount.user",
-            "application.studentAccount",
-            "application.studentAccount.user",
-            "application.tutorAccount",
-            "application.tutorAccount.user",
-            "studentAccount",
-            "studentAccount.user",
-            "tutorAccount",
-            "tutorAccount.user"
-    })
+    @EntityGraph(attributePaths = {"application", "application.tutorCard", "participantAUser", "participantAAccount", "participantBUser", "participantBAccount", "studentAccount", "tutorAccount"})
     @Query("""
-            select distinct conversation from Conversation conversation
-            where conversation.studentAccount.user.id = :userId
-               or conversation.tutorAccount.user.id = :userId
-            order by conversation.createdAt desc
+            select conversation from Conversation conversation
+            where conversation.participantAUser.id = :userId
+               or conversation.participantBUser.id = :userId
+            order by conversation.updatedAt desc
             """)
-    List<Conversation> findByParticipantUserIdOrderByCreatedAtDesc(@Param("userId") Long userId);
-
-    @EntityGraph(attributePaths = {
-            "application",
-            "application.tutorCard",
-            "application.tutorCard.tutorAccount",
-            "application.tutorCard.tutorAccount.user",
-            "application.studentAccount",
-            "application.studentAccount.user",
-            "application.tutorAccount",
-            "application.tutorAccount.user",
-            "studentAccount",
-            "studentAccount.user",
-            "tutorAccount",
-            "tutorAccount.user"
-    })
-    List<Conversation> findByTutorAccount_User_IdOrderByCreatedAtDesc(Long userId);
-
-    @EntityGraph(attributePaths = {
-            "application",
-            "application.tutorCard",
-            "application.tutorCard.tutorAccount",
-            "application.tutorCard.tutorAccount.user",
-            "application.studentAccount",
-            "application.studentAccount.user",
-            "application.tutorAccount",
-            "application.tutorAccount.user",
-            "studentAccount",
-            "studentAccount.user",
-            "tutorAccount",
-            "tutorAccount.user"
-    })
-    List<Conversation> findByStudentAccount_User_IdOrderByCreatedAtDesc(Long userId);
+    List<Conversation> findByParticipantUserIdOrderByUpdatedAtDesc(@Param("userId") Long userId);
 }

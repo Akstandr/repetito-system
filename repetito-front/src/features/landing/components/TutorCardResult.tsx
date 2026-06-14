@@ -14,6 +14,7 @@ function formatTutorCardFormat(value: TutorCard["format"]) {
 export function TutorCardResult({
   card,
   onApply,
+  onMessage,
   onOpen,
   isApplying,
   hasApplied,
@@ -21,6 +22,7 @@ export function TutorCardResult({
 }: {
   card: TutorCard;
   onApply: (cardId: number) => void;
+  onMessage: (card: TutorCard) => void;
   onOpen: (cardId: number) => void;
   isApplying: boolean;
   hasApplied: boolean;
@@ -71,11 +73,16 @@ export function TutorCardResult({
 
       <div className="mt-4 flex-1" />
 
-      {hasApplied ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          Вы уже отправили заявку на эту карточку
-        </div>
-      ) : (
+      <button
+        type="button"
+        onClick={(event) => { event.stopPropagation(); onMessage(card); }}
+        className="mb-2 inline-flex w-full items-center justify-center rounded-xl border border-border px-4 py-3 text-sm font-medium transition hover:bg-secondary"
+      >
+        Написать репетитору
+      </button>
+      {hasApplied ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        Вы уже отправили заявку на эту карточку
+      </div> : (
         <button
           type="button"
           onClick={(event) => {

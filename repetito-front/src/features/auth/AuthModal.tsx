@@ -17,6 +17,7 @@ interface LoginForm {
 interface RegisterForm {
   firstName: string;
   lastName: string;
+  isAdmin: boolean;
   email: string;
   password: string;
   confirmPassword: string;
@@ -113,7 +114,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
     }
 
     onClose();
-    navigateTo("/account");
+    navigateTo(response.user.isAdmin ? "/admin" : "/account");
   }
 
   async function handleLogin(data: LoginForm) {

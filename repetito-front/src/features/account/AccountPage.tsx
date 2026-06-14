@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import {
     ArrowLeft,
+    ArrowDown,
     BookOpen,
     Calendar,
     Check,
@@ -31,7 +32,13 @@ import type { SubjectOption } from "../../shared/api";
 import { markdownToSafeHtml } from "../../shared/markdown";
 import { AuthResponse, useAuthSession } from "../../shared/useAuthSession";
 import { useAutoClearMessage } from "../../shared/useAutoClearMessage";
-import { AccountHeader, AccountSidebar } from "./components";
+import {
+    chatDateKey,
+    formatChatDate,
+    formatChatTime,
+    useConversationMessages,
+} from "../../shared/useConversationMessages";
+import { AccountHeader, AccountSidebar, TutorAccountApplicationPanel } from "./components";
 
 type AccountType = "student" | "tutor";
 type SectionKey =
@@ -76,6 +83,8 @@ interface TutorCardView {
     supportedGrades: number[];
     format: TutorCardFormat;
     isActive: boolean;
+    moderationStatus: "PENDING_MODERATION" | "APPROVED" | "REJECTED";
+    rejectionReason: string | null;
     createdAt: string;
     updatedAt: string;
     tutor: { id: number; firstName: string; lastName: string };
@@ -99,29 +108,22 @@ interface ApplicationView {
 
 interface ConversationView {
     id: number;
-    applicationId: number;
-    studentAccountId: number;
-    tutorAccountId: number;
-    studentFirstName: string;
-    studentLastName: string;
-    tutorFirstName: string;
-    tutorLastName: string;
-    application: ApplicationView;
+    applicationId: number | null;
+    studentAccountId: number | null;
+    tutorAccountId: number | null;
+    studentFirstName: string | null;
+    studentLastName: string | null;
+    tutorFirstName: string | null;
+    tutorLastName: string | null;
+    application: ApplicationView | null;
+    counterpartUserId: number;
+    counterpartAccountId: number | null;
+    counterpartType: "STUDENT" | "TUTOR" | "ADMIN" | "USER";
+    counterpartFirstName: string;
+    counterpartLastName: string;
     lastMessageText: string | null;
     lastMessageAt: string | null;
     unreadMessagesCount: number;
-    createdAt: string;
-}
-
-interface MessageView {
-    id: number;
-    conversationId: number;
-    senderAccountId: number;
-    senderFirstName: string;
-    senderLastName: string;
-    senderType: AccountType;
-    text: string;
-    readAt: string | null;
     createdAt: string;
 }
 
@@ -151,7 +153,7 @@ interface TutorStudentView {
     studentLastName: string;
     subject: string;
     applicationId: number;
-    conversationId: number;
+    conversationId: number | null;
     acceptedAt: string;
 }
 
@@ -161,7 +163,7 @@ interface StudentTutorView {
     tutorLastName: string;
     subject: string;
     applicationId: number;
-    conversationId: number;
+    conversationId: number | null;
     acceptedAt: string;
 }
 
@@ -312,6 +314,13 @@ function digitsOnly(value: string) {
 
 function errorText(error: unknown, fallback: string) {
     return formatErrorMessage(error instanceof Error ? error.message : "", fallback);
+}
+
+function conversationParticipantLabel(type: ConversationView["counterpartType"]) {
+    if (type === "TUTOR") return "Репетитор";
+    if (type === "STUDENT") return "Ученик";
+    if (type === "ADMIN") return "Администратор";
+    return "Пользователь";
 }
 
 function normalizeVideoMeetingUrl(value: string | null | undefined) {
@@ -525,7 +534,6 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
 
     const [applications, setApplications] = useState<ApplicationView[]>([]);
     const [conversations, setConversations] = useState<ConversationView[]>([]);
-    const [messages, setMessages] = useState<MessageView[]>([]);
     const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
     const [messageDraft, setMessageDraft] = useState<MessageForm>(emptyMessage);
     const [tutorStudents, setTutorStudents] = useState<TutorStudentView[]>([]);
@@ -543,12 +551,36 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
     const [lessonFilter, setLessonFilter] = useState<LessonFilter>("all");
     const [lessonStudentFilter, setLessonStudentFilter] = useState("");
 
+    const {
+        messages,
+        isInitialLoading: isMessagesLoading,
+        isLoadingOlder,
+        isSending: isMessageSending,
+        hasMore: hasOlderMessages,
+        isNearBottom: areLatestMessagesVisible,
+        newMessagesCount,
+        error: chatError,
+        realtimeError,
+        scrollRef: messageScrollRef,
+        handleScroll: handleMessageScroll,
+        scrollToBottom: scrollMessagesToBottom,
+        sendMessage: sendConversationMessage,
+    } = useConversationMessages(selectedConversationId, () => {
+        void loadConversations({ silent: true, preserveSelection: true });
+    });
+
     const activeAccount = session?.activeAccount ?? null;
     const accounts = session?.accounts ?? [];
     const user = session?.user ?? null;
 
     const hasStudentAccount = accounts.some((account) => account.type === "student");
     const hasTutorAccount = accounts.some((account) => account.type === "tutor");
+
+    useEffect(() => {
+        if (user?.isAdmin) {
+            navigateTo("/admin");
+        }
+    }, [user?.isAdmin]);
 
     useAutoClearMessage(error, setError);
 
@@ -650,6 +682,9 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
 
     useEffect(() => {
         if (!activeAccount) {
+            if (activeSection === "messages") {
+                void loadConversations({ preserveSelection: true });
+            }
             return;
         }
 
@@ -658,7 +693,6 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
         setCards([]);
         setApplications([]);
         setConversations([]);
-        setMessages([]);
         setTutorStudents([]);
         setStudentTutors([]);
         setStudentReviews([]);
@@ -700,14 +734,14 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
     }, []);
 
     useEffect(() => {
-        if (!activeAccount) {
+        if (!user) {
             return;
         }
 
         void loadConversations({ silent: true, preserveSelection: true });
         void loadApplications({ silent: true });
 
-        if (activeSection === "cards" && activeAccount.type === "tutor") {
+        if (activeSection === "cards" && activeAccount?.type === "tutor") {
             void loadTutorCards();
         }
         if (activeSection === "applications") {
@@ -719,7 +753,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
         if (activeSection === "students" && hasTutorAccount) {
             void loadTutorStudents();
         }
-        if (activeSection === "lessons" && activeAccount.type === "tutor") {
+        if (activeSection === "lessons" && activeAccount?.type === "tutor") {
             void loadApplications();
             void loadTutorStudents();
         }
@@ -754,7 +788,6 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
         if (routeSection === "profile") {
             setActiveSection("profile");
             setSelectedConversationId(null);
-            setMessages([]);
             return;
         }
 
@@ -766,18 +799,10 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
 
         setActiveSection(routeSection);
         setSelectedConversationId(null);
-        setMessages([]);
-    }, [initialConversationId, routePath, activeAccount?.id]);
+    }, [initialConversationId, routePath, activeAccount?.id, user?.id]);
 
     useEffect(() => {
-        if (!selectedConversationId) {
-            setMessages([]);
-            setMessageDraft(emptyMessage());
-            return;
-        }
-
         setMessageDraft(emptyMessage());
-        void loadMessages(selectedConversationId);
     }, [selectedConversationId]);
 
     useEffect(() => {
@@ -995,6 +1020,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
             setIsCardFormOpen(false);
             await loadTutorCards();
             setActiveSection("cards");
+            window.alert("Карточка отправлена на модерацию. После одобрения она появится в поиске.");
         } catch (saveError) {
             setError(errorText(saveError, "Не удалось сохранить карточку"));
         } finally {
@@ -1280,50 +1306,9 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
         }
     }
 
-    async function loadMessages(conversationId: number) {
-        try {
-            const response = await fetch(`${MARKETPLACE_API_BASE_URL}/conversations/${conversationId}/messages`, {
-                headers: getAuthHeaders(),
-            });
-            if (!response.ok) {
-                throw new Error(await readErrorMessage(response, "Не удалось загрузить сообщения"));
-            }
-            setMessages((await response.json()) as MessageView[]);
-            await loadConversations({ preserveSelection: true });
-        } catch (loadError) {
-            setError(errorText(loadError, "Не удалось загрузить сообщения"));
-        }
-    }
-
     async function sendMessage() {
-        if (!selectedConversationId) return;
-        const text = messageDraft.text.trim();
-        if (!text) {
-            setError("Нельзя отправить пустое сообщение");
-            return;
-        }
-
-        setIsBusy(true);
-        try {
-            const response = await fetch(`${MARKETPLACE_API_BASE_URL}/conversations/${selectedConversationId}/messages`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    ...getAuthHeaders(),
-                },
-                body: JSON.stringify({ text }),
-            });
-            if (!response.ok) {
-                throw new Error(await readErrorMessage(response, "Не удалось отправить сообщение"));
-            }
-            const sent = (await response.json()) as MessageView;
-            setMessages((current) => [...current, sent]);
+        if (await sendConversationMessage(messageDraft.text)) {
             setMessageDraft(emptyMessage());
-            await loadConversations({ preserveSelection: true });
-        } catch (sendError) {
-            setError(errorText(sendError, "Не удалось отправить сообщение"));
-        } finally {
-            setIsBusy(false);
         }
     }
 
@@ -1465,6 +1450,10 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
         );
     }
 
+    if (user.isAdmin) {
+        return null;
+    }
+
     const displayName = `${user.firstName} ${user.lastName}`.trim() || "Пользователь";
     const isStudent = activeAccount?.type === "student";
     const isTutor = activeAccount?.type === "tutor";
@@ -1555,20 +1544,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                     </button>
                                 )}
 
-                                {!hasTutorAccount && (
-                                    <button
-                                        type="button"
-                                        disabled={isBusy}
-                                        onClick={() => createAccount("tutor")}
-                                        className="flex items-center justify-between rounded-2xl border border-border bg-secondary p-5 text-left transition hover:border-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
-                                    >
-                                        <span>
-                                            <span className="mb-1 block text-base font-semibold">Создать аккаунт репетитора</span>
-                                            <span className="block text-sm text-muted-foreground">Откроет кабинет репетитора с пустым профилем.</span>
-                                        </span>
-                                        <BookOpen size={20} className="text-primary" />
-                                    </button>
-                                )}
+                                {!hasTutorAccount && <TutorAccountApplicationPanel fullName={`${user.firstName} ${user.lastName}`.trim()} subjects={subjectOptions} />}
                             </div>
                         </section>
                     )}
@@ -1943,7 +1919,12 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                                     <span className="rounded-full bg-muted px-3 py-1">
                                                         {card.isActive ? "Активна" : "Скрыта"}
                                                     </span>
+                                                    <span className={`rounded-full px-3 py-1 ${card.moderationStatus === "APPROVED" ? "bg-emerald-500/15 text-emerald-600" : card.moderationStatus === "REJECTED" ? "bg-destructive/10 text-destructive" : "bg-amber-500/15 text-amber-700"}`}>
+                                                        {card.moderationStatus === "APPROVED" ? "Одобрена" : card.moderationStatus === "REJECTED" ? "Отклонена" : "На модерации"}
+                                                    </span>
                                                 </div>
+
+                                                {card.rejectionReason && <div className="mt-3 rounded-xl bg-destructive/10 p-3 text-sm text-destructive">Причина отклонения: {card.rejectionReason}</div>}
 
                                                 <div className="mt-4 flex flex-wrap gap-2">
                                                     <button
@@ -2189,14 +2170,14 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                                         {subjectLabel(student.subject)} · {formatDate(student.acceptedAt)}
                                                     </div>
                                                 </div>
-                                                <button
+                                                {student.conversationId && <button
                                                     type="button"
                                                     onClick={() => openChat(student.conversationId, setActiveSection, setSelectedConversationId)}
                                                     className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm transition hover:bg-secondary"
                                                 >
                                                     <MessageCircle size={15} />
                                                     Сообщения
-                                                </button>
+                                                </button>}
                                             </div>
                                         </div>
                                     ))
@@ -2225,14 +2206,14 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                                         {subjectLabel(tutor.subject)} · {formatDate(tutor.acceptedAt)}
                                                     </div>
                                                 </div>
-                                                <button
+                                                {tutor.conversationId && <button
                                                     type="button"
                                                     onClick={() => openChat(tutor.conversationId, setActiveSection, setSelectedConversationId)}
                                                     className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm transition hover:bg-secondary"
                                                 >
                                                     <MessageCircle size={15} />
                                                     Сообщения
-                                                </button>
+                                                </button>}
                                             </div>
                                         </div>
                                     ))
@@ -2241,12 +2222,12 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                         </section>
                     )}
 
-                    {activeAccount && activeSection === "messages" && (
-                        <section className="rounded-2xl border border-border bg-card p-4 sm:p-6">
-                            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    {activeSection === "messages" && (
+                        <section className="flex min-h-[calc(100dvh-8rem)] flex-col overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-6 lg:h-[calc(100dvh-8rem)] lg:min-h-0">
+                            <div className="mb-4 flex flex-none flex-wrap items-center justify-between gap-3">
                                 <div>
                                     <h2 className="text-2xl font-semibold">Сообщения</h2>
-                                    <p className="text-sm text-muted-foreground">Переписка доступна после принятия заявки.</p>
+                                    <p className="text-sm text-muted-foreground">Все ваши диалоги, независимо от наличия заявки.</p>
                                 </div>
                                 {unreadMessagesCount > 0 && (
                                     <div className="rounded-full bg-destructive px-3 py-1.5 text-sm font-semibold text-destructive-foreground">
@@ -2256,17 +2237,14 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                             </div>
 
                             {!selectedConversationId ? (
-                                <div className="space-y-2">
+                                <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
                                     {conversations.length === 0 ? (
                                         <div className="rounded-2xl border border-border bg-secondary p-5 text-sm text-muted-foreground">
                                             Пока нет диалогов.
                                         </div>
                                     ) : (
                                         conversations.map((conversation) => {
-                                            const isStudentConversation = studentAccountIds.has(conversation.studentAccountId);
-                                            const companionName = isStudentConversation
-                                                ? `${conversation.tutorFirstName} ${conversation.tutorLastName}`
-                                                : `${conversation.studentFirstName} ${conversation.studentLastName}`;
+                                            const companionName = `${conversation.counterpartFirstName} ${conversation.counterpartLastName}`.trim();
 
                                             return (
                                                 <button
@@ -2283,7 +2261,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                                     </span>
                                                     <span className="flex shrink-0 items-center gap-2">
                                                         <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-semibold text-secondary-foreground">
-                                                            {isStudentConversation ? "Репетитор" : "Ученик"}
+                                                            {conversationParticipantLabel(conversation.counterpartType)}
                                                         </span>
                                                         {conversation.unreadMessagesCount > 0 ? (
                                                             <span className="rounded-full bg-destructive px-2.5 py-1 text-[11px] font-semibold text-destructive-foreground">
@@ -2297,13 +2275,12 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                     )}
                                 </div>
                             ) : (
-                                <div className="min-w-0 rounded-2xl border border-border bg-card p-3 sm:p-4">
-                                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                                <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card p-3 sm:p-4">
+                                    <div className="mb-4 flex flex-none flex-wrap items-center justify-between gap-3">
                                         <button
                                             type="button"
                                             onClick={() => {
                                                 setSelectedConversationId(null);
-                                                setMessages([]);
                                                 navigateTo("/profile/messages");
                                             }}
                                             className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
@@ -2315,67 +2292,105 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                         {selectedConversation ? (
                                             <div className="min-w-0 text-right">
                                                 <div className="truncate text-sm font-semibold">
-                                                    {studentAccountIds.has(selectedConversation.studentAccountId)
-                                                        ? `${selectedConversation.tutorFirstName} ${selectedConversation.tutorLastName}`
-                                                        : `${selectedConversation.studentFirstName} ${selectedConversation.studentLastName}`}
+                                                    {selectedConversation.counterpartFirstName} {selectedConversation.counterpartLastName}
                                                 </div>
                                                 <div className="text-xs text-muted-foreground">
-                                                    {studentAccountIds.has(selectedConversation.studentAccountId) ? "Репетитор" : "Ученик"}
+                                                    {conversationParticipantLabel(selectedConversation.counterpartType)}
                                                 </div>
                                             </div>
                                         ) : null}
                                     </div>
 
-                                    <div className="max-h-[58vh] space-y-3 overflow-y-auto pr-1">
-                                        {messages.length === 0 ? (
-                                            <div className="text-sm text-muted-foreground">Сообщений пока нет.</div>
-                                        ) : (
-                                            messages.map((message) => {
-                                                const isMine = userAccountIds.has(message.senderAccountId);
-                                                return (
-                                                    <div
-                                                        key={message.id}
-                                                        className={`flex ${isMine ? "justify-end" : "justify-start"}`}
-                                                    >
-                                                        <div
-                                                            className={`max-w-[88%] break-words rounded-2xl px-4 py-3 text-sm sm:max-w-[75%] ${isMine ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
-                                                                }`}
-                                                        >
-                                                            <div className="mb-1 text-xs opacity-70">
-                                                                {message.senderFirstName} {message.senderLastName}
-                                                            </div>
-                                                            {message.text}
-                                                            {isMine ? (
-                                                                <div className="mt-2 flex justify-end">
-                                                                    {message.readAt ? (
-                                                                        <CheckCheck size={14} className="opacity-90" />
-                                                                    ) : (
-                                                                        <Check size={14} className="opacity-80" />
-                                                                    )}
+                                    {(chatError || realtimeError) && (
+                                        <div className="mb-3 flex-none rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                                            {chatError || realtimeError}
+                                        </div>
+                                    )}
+
+                                    <div className="relative min-h-0 flex-1">
+                                        <div
+                                            ref={messageScrollRef}
+                                            onScroll={handleMessageScroll}
+                                            className="h-full space-y-3 overflow-y-auto pr-1"
+                                        >
+                                            {isLoadingOlder && (
+                                                <div className="py-2 text-center text-xs text-muted-foreground">Загружаем предыдущие сообщения...</div>
+                                            )}
+                                            {!isMessagesLoading && messages.length > 0 && !hasOlderMessages && (
+                                                <div className="py-2 text-center text-xs text-muted-foreground">Начало переписки</div>
+                                            )}
+                                            {isMessagesLoading ? (
+                                                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Загружаем сообщения...</div>
+                                            ) : messages.length === 0 ? (
+                                                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                                                    Сообщений пока нет. Напишите первым.
+                                                </div>
+                                            ) : (
+                                                messages.map((message, index) => {
+                                                    const isMine = message.senderUserId === user?.id;
+                                                    const showDate = index === 0
+                                                        || chatDateKey(messages[index - 1].createdAt) !== chatDateKey(message.createdAt);
+                                                    return (
+                                                        <div key={message.id}>
+                                                            {showDate && (
+                                                                <div className="my-4 flex items-center gap-3" role="separator">
+                                                                    <span className="h-px flex-1 bg-border" />
+                                                                    <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-muted-foreground">
+                                                                        {formatChatDate(message.createdAt)}
+                                                                    </span>
+                                                                    <span className="h-px flex-1 bg-border" />
                                                                 </div>
-                                                            ) : null}
+                                                            )}
+                                                            <div className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
+                                                                <div
+                                                                    className={`max-w-[88%] break-words rounded-2xl px-4 py-3 text-sm sm:max-w-[75%] ${isMine ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
+                                                                        }`}
+                                                                >
+                                                                    <div className="mb-1 text-xs opacity-70">
+                                                                        {message.senderFirstName} {message.senderLastName}
+                                                                    </div>
+                                                                    {message.text}
+                                                                    <div className="mt-2 flex items-center justify-end gap-1.5 text-[11px] opacity-70">
+                                                                        <time dateTime={message.createdAt}>{formatChatTime(message.createdAt)}</time>
+                                                                        {isMine ? (
+                                                                            message.readAt ? <CheckCheck size={14} /> : <Check size={14} />
+                                                                        ) : null}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                );
-                                            })
+                                                    );
+                                                })
+                                            )}
+                                        </div>
+
+                                        {!areLatestMessagesVisible && (
+                                            <button
+                                                type="button"
+                                                onClick={() => scrollMessagesToBottom("smooth")}
+                                                className="absolute bottom-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-lg transition hover:bg-primary/90"
+                                            >
+                                                <ArrowDown size={15} />
+                                                {newMessagesCount > 0 ? `Новые сообщения: ${newMessagesCount}` : "Прокрутить вниз"}
+                                            </button>
                                         )}
                                     </div>
 
-                                    <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                                    <div className="mt-4 flex flex-none flex-col gap-3 border-t border-border pt-4 sm:flex-row">
                                         <textarea
                                             value={messageDraft.text}
                                             onChange={(event) => setMessageDraft({ text: event.target.value })}
-                                            className="min-h-24 min-w-0 flex-1 rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
+                                            className="min-h-12 max-h-32 min-w-0 flex-1 resize-y rounded-xl border border-border bg-input-background px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring"
                                             placeholder="Напишите сообщение..."
                                         />
                                         <button
                                             type="button"
-                                            disabled={isBusy || !messageDraft.text.trim()}
+                                            disabled={isMessageSending || !messageDraft.text.trim()}
                                             onClick={() => void sendMessage()}
                                             className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                                         >
                                             <Save size={16} />
-                                            Отправить
+                                            {isMessageSending ? "Отправляем..." : "Отправить"}
                                         </button>
                                     </div>
                                 </div>
@@ -2904,20 +2919,7 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                     </button>
                                 )}
 
-                                {!hasTutorAccount && (
-                                    <button
-                                        type="button"
-                                        disabled={isBusy}
-                                        onClick={() => createAccount("tutor")}
-                                        className="flex items-center justify-between rounded-2xl border border-border bg-secondary p-5 text-left transition hover:border-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
-                                    >
-                                        <span>
-                                            <span className="mb-1 block text-base font-semibold">Создать аккаунт репетитора</span>
-                                            <span className="block text-sm text-muted-foreground">После создания появится пустой профиль.</span>
-                                        </span>
-                                        <BookOpen size={20} className="text-primary" />
-                                    </button>
-                                )}
+                                {!hasTutorAccount && <TutorAccountApplicationPanel fullName={`${user.firstName} ${user.lastName}`.trim()} subjects={subjectOptions} compact />}
                             </div>
 
                             {accounts.length > 1 && (

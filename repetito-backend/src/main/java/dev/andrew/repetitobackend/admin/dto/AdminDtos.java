@@ -2,6 +2,7 @@ package dev.andrew.repetitobackend.admin.dto;
 
 import dev.andrew.repetitobackend.accounts.model.AccountType;
 import dev.andrew.repetitobackend.tutorcards.model.TutorCardFormat;
+import dev.andrew.repetitobackend.tutorcards.model.TutorCardModerationStatus;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -73,6 +74,10 @@ public final class AdminDtos {
             List<Integer> supportedGrades,
             TutorCardFormat format,
             boolean isActive,
+            TutorCardModerationStatus moderationStatus,
+            String rejectionReason,
+            Long reviewedByAdminId,
+            Instant reviewedAt,
             Instant createdAt,
             Instant updatedAt
     ) {

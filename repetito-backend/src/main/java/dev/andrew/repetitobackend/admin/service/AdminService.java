@@ -9,6 +9,8 @@ import dev.andrew.repetitobackend.applications.model.TutorApplication;
 import dev.andrew.repetitobackend.applications.repository.TutorApplicationRepository;
 import dev.andrew.repetitobackend.lessons.repository.LessonRepository;
 import dev.andrew.repetitobackend.tutorcards.model.TutorCard;
+import dev.andrew.repetitobackend.tutorcards.model.TutorCardModerationStatus;
+import dev.andrew.repetitobackend.common.security.AuthPrincipal;
 import dev.andrew.repetitobackend.tutorcards.repository.TutorCardRepository;
 import dev.andrew.repetitobackend.users.model.User;
 import dev.andrew.repetitobackend.users.repository.UserRepository;
@@ -26,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
@@ -87,11 +90,12 @@ public class AdminService {
             String query,
             String subject,
             Boolean active,
+            TutorCardModerationStatus moderationStatus,
             int page,
             int limit
     ) {
         Page<TutorCard> result = tutorCardRepository.findAll(
-                tutorCardSpecification(query, subject, active),
+                tutorCardSpecification(query, subject, active, moderationStatus),
                 pageRequest(page, limit, "createdAt")
         );
         return toPage(result.getContent().stream().map(this::toTutorCardItem).toList(), result, page, limit);
@@ -108,6 +112,28 @@ public class AdminService {
         TutorCard card = tutorCardRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Tutor card not found"));
         card.setActive(false);
+        return toTutorCardItem(tutorCardRepository.save(card));
+    }
+
+    @Transactional
+    public AdminDtos.TutorCardItem approveTutorCard(AuthPrincipal principal, Long id) {
+        TutorCard card = requirePendingCard(id);
+        card.setModerationStatus(TutorCardModerationStatus.APPROVED);
+        card.setRejectionReason(null);
+        card.setReviewedByAdmin(requireAdmin(principal.userId()));
+        card.setReviewedAt(Instant.now());
+        return toTutorCardItem(tutorCardRepository.save(card));
+    }
+
+    @Transactional
+    public AdminDtos.TutorCardItem rejectTutorCard(AuthPrincipal principal, Long id, String reason) {
+        TutorCard card = requirePendingCard(id);
+        String normalized = reason == null ? "" : reason.trim();
+        if (normalized.isEmpty()) throw new IllegalArgumentException("Rejection reason is required");
+        card.setModerationStatus(TutorCardModerationStatus.REJECTED);
+        card.setRejectionReason(normalized);
+        card.setReviewedByAdmin(requireAdmin(principal.userId()));
+        card.setReviewedAt(Instant.now());
         return toTutorCardItem(tutorCardRepository.save(card));
     }
 
@@ -161,6 +187,10 @@ public class AdminService {
                 card.getSupportedGrades().stream().sorted().toList(),
                 card.getFormat(),
                 card.isActive(),
+                card.getModerationStatus(),
+                card.getRejectionReason(),
+                card.getReviewedByAdmin() == null ? null : card.getReviewedByAdmin().getId(),
+                card.getReviewedAt(),
                 card.getCreatedAt(),
                 card.getUpdatedAt()
         );
@@ -183,7 +213,7 @@ public class AdminService {
         };
     }
 
-    private Specification<TutorCard> tutorCardSpecification(String queryText, String subjectText, Boolean active) {
+    private Specification<TutorCard> tutorCardSpecification(String queryText, String subjectText, Boolean active, TutorCardModerationStatus moderationStatus) {
         String query = normalize(queryText);
         String subject = normalize(subjectText);
         return (root, criteriaQuery, builder) -> {
@@ -203,6 +233,9 @@ public class AdminService {
             if (active != null) {
                 predicates.add(builder.equal(root.get("isActive"), active));
             }
+            if (moderationStatus != null) {
+                predicates.add(builder.equal(root.get("moderationStatus"), moderationStatus));
+            }
             return builder.and(predicates.toArray(Predicate[]::new));
         };
     }
@@ -214,6 +247,21 @@ public class AdminService {
             throw new IllegalArgumentException("Account type does not match");
         }
         return account;
+    }
+
+    private TutorCard requirePendingCard(Long id) {
+        TutorCard card = tutorCardRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Tutor card not found"));
+        if (card.getModerationStatus() != TutorCardModerationStatus.PENDING_MODERATION) {
+            throw new IllegalArgumentException("Tutor card has already been reviewed");
+        }
+        return card;
+    }
+
+    private User requireAdmin(Long id) {
+        User user = userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Administrator not found"));
+        if (!user.isAdmin()) throw new IllegalArgumentException("Administrator access required");
+        return user;
     }
 
     private PageRequest pageRequest(int page, int limit, String sort) {

@@ -56,8 +56,16 @@ export interface AdminTutorCard {
   supportedGrades: number[];
   format: "ONLINE" | "OFFLINE" | "MIXED";
   isActive: boolean;
+  moderationStatus: "PENDING_MODERATION" | "APPROVED" | "REJECTED";
+  rejectionReason: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TutorAccountApplication {
+  id: number; userId: number; email: string; fullName: string; age: number; subjects: string[];
+  pricePerLesson: number; status: "PENDING" | "APPROVED" | "REJECTED"; rejectionReason: string | null;
+  createdAt: string; reviewedAt: string | null;
 }
 
 async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -103,4 +111,31 @@ export function fetchAdminTutorCards(query: string, subject: string, active: str
 
 export function deactivateAdminTutorCard(id: number) {
   return adminFetch<AdminTutorCard>(`/tutor-cards/${id}`, { method: "DELETE" });
+}
+
+export function fetchTutorAccountApplications(status: string, page: number) {
+  const params = new URLSearchParams({ page: String(page), limit: "20" });
+  if (status) params.set("status", status);
+  return adminFetch<PageResponse<TutorAccountApplication>>(`/tutor-account-applications?${params}`);
+}
+
+export function approveTutorAccountApplication(id: number) {
+  return adminFetch<TutorAccountApplication>(`/tutor-account-applications/${id}/approve`, { method: "PATCH" });
+}
+
+export function rejectTutorAccountApplication(id: number, reason: string) {
+  return adminFetch<TutorAccountApplication>(`/tutor-account-applications/${id}/reject`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason }) });
+}
+
+export function fetchTutorCardsForModeration(page: number) {
+  const params = new URLSearchParams({ page: String(page), limit: "20", moderationStatus: "PENDING_MODERATION" });
+  return adminFetch<PageResponse<AdminTutorCard>>(`/tutor-cards?${params}`);
+}
+
+export function approveTutorCard(id: number) {
+  return adminFetch<AdminTutorCard>(`/tutor-cards/${id}/approve`, { method: "PATCH" });
+}
+
+export function rejectTutorCard(id: number, reason: string) {
+  return adminFetch<AdminTutorCard>(`/tutor-cards/${id}/reject`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason }) });
 }

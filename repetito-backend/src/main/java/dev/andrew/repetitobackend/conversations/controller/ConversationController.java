@@ -1,10 +1,11 @@
 package dev.andrew.repetitobackend.conversations.controller;
 
 import dev.andrew.repetitobackend.common.security.AuthPrincipal;
-import dev.andrew.repetitobackend.conversations.dto.ContactTutorRequest;
 import dev.andrew.repetitobackend.conversations.dto.ConversationResponse;
 import dev.andrew.repetitobackend.conversations.dto.MessageRequest;
 import dev.andrew.repetitobackend.conversations.dto.MessageResponse;
+import dev.andrew.repetitobackend.conversations.dto.MessagePageResponse;
+import dev.andrew.repetitobackend.conversations.dto.StartConversationRequest;
 import dev.andrew.repetitobackend.conversations.service.ConversationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,23 +27,24 @@ public class ConversationController {
         return ResponseEntity.ok(conversationService.getMyConversations((AuthPrincipal) authentication.getPrincipal()));
     }
 
-    @PostMapping("/contact")
-    public ResponseEntity<ConversationResponse> contactTutor(
+    @PostMapping("/start")
+    public ResponseEntity<ConversationResponse> start(
             Authentication authentication,
-            @Valid @RequestBody ContactTutorRequest request
+            @Valid @RequestBody StartConversationRequest request
     ) {
-        return ResponseEntity.ok(conversationService.contactTutor(
-                (AuthPrincipal) authentication.getPrincipal(),
-                request.getTutorAccountId()
-        ));
+        return ResponseEntity.ok(conversationService.startConversation((AuthPrincipal) authentication.getPrincipal(), request));
     }
 
     @GetMapping("/{id}/messages")
-    public ResponseEntity<List<MessageResponse>> messages(
+    public ResponseEntity<MessagePageResponse> messages(
             Authentication authentication,
-            @PathVariable Long id
+            @PathVariable Long id,
+            @RequestParam(required = false) Long beforeMessageId,
+            @RequestParam(defaultValue = "30") int limit
     ) {
-        return ResponseEntity.ok(conversationService.getMessages((AuthPrincipal) authentication.getPrincipal(), id));
+        return ResponseEntity.ok(conversationService.getMessages(
+                (AuthPrincipal) authentication.getPrincipal(), id, beforeMessageId, limit
+        ));
     }
 
     @PostMapping("/{id}/messages")

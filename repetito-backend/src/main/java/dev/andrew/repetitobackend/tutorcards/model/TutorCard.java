@@ -1,6 +1,7 @@
 package dev.andrew.repetitobackend.tutorcards.model;
 
 import dev.andrew.repetitobackend.accounts.model.Account;
+import dev.andrew.repetitobackend.users.model.User;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -51,6 +52,19 @@ public class TutorCard {
     @Column(nullable = false)
     private boolean isActive;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "moderation_status", nullable = false)
+    private TutorCardModerationStatus moderationStatus;
+
+    @Column(name = "rejection_reason", columnDefinition = "TEXT")
+    private String rejectionReason;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reviewed_by_admin_id")
+    private User reviewedByAdmin;
+
+    private Instant reviewedAt;
+
     @Column(nullable = false)
     private Instant createdAt;
 
@@ -63,6 +77,7 @@ public class TutorCard {
         if (createdAt == null) {
             createdAt = now;
         }
+        if (moderationStatus == null) moderationStatus = TutorCardModerationStatus.PENDING_MODERATION;
         updatedAt = now;
     }
 

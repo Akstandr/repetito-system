@@ -14,6 +14,7 @@ import dev.andrew.repetitobackend.tutorcards.dto.TutorCardRequest;
 import dev.andrew.repetitobackend.tutorcards.dto.TutorCardResponse;
 import dev.andrew.repetitobackend.tutorcards.model.TutorCard;
 import dev.andrew.repetitobackend.tutorcards.model.TutorCardFormat;
+import dev.andrew.repetitobackend.tutorcards.model.TutorCardModerationStatus;
 import dev.andrew.repetitobackend.tutorcards.repository.TutorCardRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -24,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.IntStream;
 
@@ -80,6 +82,7 @@ public class TutorCardService {
                 .supportedGrades(normalizeSupportedGrades(request.getSupportedGrades(), defaultSupportedGrades()))
                 .format(request.getFormat() == null ? TutorCardFormat.ONLINE : request.getFormat())
                 .isActive(request.getIsActive() == null || request.getIsActive())
+                .moderationStatus(TutorCardModerationStatus.PENDING_MODERATION)
                 .build());
         return toResponse(card);
     }
@@ -92,16 +95,31 @@ public class TutorCardService {
         String subject = normalizeSubject(request.getSubject());
         ensureSubjectAllowed(subject, card);
 
-        card.setTitle(request.getTitle().trim());
-        card.setDescription(blankToNull(request.getDescription()));
+        String title = request.getTitle().trim();
+        String description = blankToNull(request.getDescription());
+        Set<Integer> supportedGrades = normalizeSupportedGrades(request.getSupportedGrades(), card.getSupportedGrades());
+        TutorCardFormat format = request.getFormat() == null ? card.getFormat() : request.getFormat();
+        boolean contentChanged = !Objects.equals(card.getTitle(), title)
+                || !Objects.equals(card.getDescription(), description)
+                || !Objects.equals(card.getSubject(), subject)
+                || !Objects.equals(card.getPricePerLesson(), request.getPricePerLesson())
+                || !Objects.equals(card.getSupportedGrades(), supportedGrades)
+                || card.getFormat() != format;
+
+        card.setTitle(title);
+        card.setDescription(description);
         card.setSubject(subject);
         card.setPricePerLesson(request.getPricePerLesson());
-        card.setSupportedGrades(normalizeSupportedGrades(request.getSupportedGrades(), card.getSupportedGrades()));
-        if (request.getFormat() != null) {
-            card.setFormat(request.getFormat());
-        }
+        card.setSupportedGrades(supportedGrades);
+        card.setFormat(format);
         if (request.getIsActive() != null) {
             card.setActive(request.getIsActive());
+        }
+        if (contentChanged) {
+            card.setModerationStatus(TutorCardModerationStatus.PENDING_MODERATION);
+            card.setRejectionReason(null);
+            card.setReviewedByAdmin(null);
+            card.setReviewedAt(null);
         }
 
         return toResponse(tutorCardRepository.save(card));
@@ -127,6 +145,7 @@ public class TutorCardService {
     public TutorCardResponse getVisibleCard(Long id) {
         return tutorCardRepository.findById(id)
                 .filter(TutorCard::isActive)
+                .filter(card -> card.getModerationStatus() == TutorCardModerationStatus.APPROVED)
                 .map(this::toResponse)
                 .orElseThrow(() -> new IllegalArgumentException("Tutor card not found"));
     }

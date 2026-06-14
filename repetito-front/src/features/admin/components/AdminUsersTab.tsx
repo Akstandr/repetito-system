@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2, Search, ShieldCheck } from "lucide-react";
+import { Loader2, MessageCircle, Search, ShieldCheck } from "lucide-react";
 import { formatErrorMessage } from "../../../shared/api";
 import { useAutoClearMessage } from "../../../shared/useAutoClearMessage";
 import { AdminUser, PageResponse, fetchAdminUsers } from "../api";
@@ -7,7 +7,7 @@ import { AdminPagination } from "./AdminPagination";
 
 const emptyPage: PageResponse<AdminUser> = { items: [], page: 1, limit: 20, total: 0, totalPages: 0 };
 
-export function AdminUsersTab() {
+export function AdminUsersTab({ onMessage }: { onMessage: (user: AdminUser) => void }) {
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -37,12 +37,13 @@ export function AdminUsersTab() {
       {loading ? <div className="flex justify-center py-12"><Loader2 className="animate-spin text-primary" /></div> : (
         <div className="overflow-x-auto rounded-2xl border border-border">
           <table className="min-w-[780px] w-full text-left text-sm">
-            <thead className="bg-secondary/70 text-muted-foreground"><tr><th className="p-4">Пользователь</th><th className="p-4">Email</th><th className="p-4">Аккаунты</th><th className="p-4">Регистрация</th></tr></thead>
+            <thead className="bg-secondary/70 text-muted-foreground"><tr><th className="p-4">Пользователь</th><th className="p-4">Email</th><th className="p-4">Аккаунты</th><th className="p-4">Регистрация</th><th className="p-4"></th></tr></thead>
             <tbody>{data.items.map((user) => <tr key={user.id} className="border-t border-border">
               <td className="p-4 font-medium"><span className="inline-flex items-center gap-2">{user.firstName} {user.lastName}{user.isAdmin && <ShieldCheck size={15} className="text-primary" />}</span></td>
               <td className="p-4 text-muted-foreground">{user.email}</td>
               <td className="p-4"><div className="flex flex-wrap gap-1.5">{user.accounts.length ? user.accounts.map((account) => <span key={account.id} className="rounded-full bg-secondary px-2.5 py-1 text-xs">{account.type === "TUTOR" ? "Репетитор" : "Ученик"}</span>) : <span className="text-muted-foreground">Нет аккаунтов</span>}</div></td>
               <td className="p-4 text-muted-foreground">{new Date(user.createdAt).toLocaleDateString("ru-RU")}</td>
+              <td className="p-4 text-right">{!user.isAdmin && <button type="button" onClick={() => onMessage(user)} className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs hover:bg-secondary"><MessageCircle size={14} />Написать</button>}</td>
             </tr>)}</tbody>
           </table>
           {!data.items.length && <div className="p-10 text-center text-sm text-muted-foreground">Пользователи не найдены</div>}

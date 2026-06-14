@@ -20,6 +20,7 @@ public interface TutorCardRepository extends JpaRepository<TutorCard, Long>, Jpa
                     select distinct card from TutorCard card
                     left join card.supportedGrades grade
                     where card.isActive = true
+                      and card.moderationStatus = dev.andrew.repetitobackend.tutorcards.model.TutorCardModerationStatus.APPROVED
                       and (:subject is null or lower(card.subject) = :subject)
                       and (:grade is null or grade = :grade)
                       and (:excludedUserId is null or card.tutorAccount.user.id <> :excludedUserId)
@@ -28,6 +29,7 @@ public interface TutorCardRepository extends JpaRepository<TutorCard, Long>, Jpa
                     select count(distinct card) from TutorCard card
                     left join card.supportedGrades grade
                     where card.isActive = true
+                      and card.moderationStatus = dev.andrew.repetitobackend.tutorcards.model.TutorCardModerationStatus.APPROVED
                       and (:subject is null or lower(card.subject) = :subject)
                       and (:grade is null or grade = :grade)
                       and (:excludedUserId is null or card.tutorAccount.user.id <> :excludedUserId)

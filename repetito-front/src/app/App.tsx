@@ -59,7 +59,7 @@ export default function App() {
     return <PublicProfileSearchPage />;
   }
 
-  if (path === "/admin") {
+  if (path === "/admin" || path.startsWith("/admin/")) {
     return <AdminPage />;
   }
 

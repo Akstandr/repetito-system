@@ -1,6 +1,6 @@
 package dev.andrew.repetitobackend.conversations.dto;
 
-import dev.andrew.repetitobackend.conversations.model.Conversation;
+import dev.andrew.repetitobackend.applications.model.TutorApplication;
 
 import java.time.Instant;
 
@@ -13,15 +13,15 @@ public record TutorStudentResponse(
         Long conversationId,
         Instant acceptedAt
 ) {
-    public static TutorStudentResponse from(Conversation conversation) {
+    public static TutorStudentResponse from(TutorApplication application, Long conversationId) {
         return new TutorStudentResponse(
-                conversation.getStudentAccount().getId(),
-                conversation.getStudentAccount().getUser().getFirstName(),
-                conversation.getStudentAccount().getUser().getLastName(),
-                conversation.getApplication().getTutorCard().getSubject(),
-                conversation.getApplication().getId(),
-                conversation.getId(),
-                conversation.getApplication().getUpdatedAt()
+                application.getStudentAccount().getId(),
+                application.getStudentAccount().getUser().getFirstName(),
+                application.getStudentAccount().getUser().getLastName(),
+                application.getTutorCard().getSubject(),
+                application.getId(),
+                conversationId,
+                application.getUpdatedAt()
         );
     }
 }

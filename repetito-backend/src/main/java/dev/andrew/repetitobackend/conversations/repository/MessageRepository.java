@@ -3,33 +3,23 @@ package dev.andrew.repetitobackend.conversations.repository;
 import dev.andrew.repetitobackend.conversations.model.Message;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface MessageRepository extends JpaRepository<Message, Long> {
 
-    @EntityGraph(attributePaths = {
-            "conversation",
-            "conversation.application",
-            "senderAccount",
-            "senderAccount.user"
-    })
-    List<Message> findByConversationIdOrderByCreatedAtAsc(Long conversationId);
+    @EntityGraph(attributePaths = {"conversation", "senderAccount", "senderUser"})
+    List<Message> findByConversationIdOrderByIdDesc(Long conversationId, Pageable pageable);
 
-    List<Message> findByConversation_IdAndSenderAccount_IdNotAndReadAtIsNull(Long conversationId, Long senderAccountId);
+    @EntityGraph(attributePaths = {"conversation", "senderAccount", "senderUser"})
+    List<Message> findByConversationIdAndIdLessThanOrderByIdDesc(Long conversationId, Long beforeMessageId, Pageable pageable);
 
-    long countByConversation_IdAndSenderAccount_IdNotAndReadAtIsNull(Long conversationId, Long senderAccountId);
+    List<Message> findByConversation_IdAndSenderUser_IdNotAndReadAtIsNull(Long conversationId, Long senderUserId);
 
-    List<Message> findByConversation_IdAndSenderAccount_User_IdNotAndReadAtIsNull(Long conversationId, Long senderUserId);
+    long countByConversation_IdAndSenderUser_IdNotAndReadAtIsNull(Long conversationId, Long senderUserId);
 
-    long countByConversation_IdAndSenderAccount_User_IdNotAndReadAtIsNull(Long conversationId, Long senderUserId);
-
-    @EntityGraph(attributePaths = {
-            "conversation",
-            "conversation.application",
-            "senderAccount",
-            "senderAccount.user"
-    })
+    @EntityGraph(attributePaths = {"conversation", "senderAccount", "senderUser"})
     Optional<Message> findFirstByConversationIdOrderByCreatedAtDesc(Long conversationId);
 }

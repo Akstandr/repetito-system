@@ -132,6 +132,9 @@ public class AccountService {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        if (user.isAdmin()) {
+            throw new IllegalArgumentException("Administrator cannot create student or tutor accounts");
+        }
 
         Account account = accountRepository.save(Account.builder()
                 .user(user)
@@ -152,9 +155,9 @@ public class AccountService {
     }
 
     public AuthResponse buildResponse(User user, Long activeAccountId, String token) {
-        List<AccountResponse> accounts = getAccounts(user.getId(), activeAccountId);
+        List<AccountResponse> accounts = user.isAdmin() ? List.of() : getAccounts(user.getId(), activeAccountId);
         AccountResponse activeAccount = accounts.stream().filter(AccountResponse::active).findFirst().orElse(null);
-        boolean requiresAccountSelection = activeAccount == null && accounts.size() > 1;
+        boolean requiresAccountSelection = !user.isAdmin() && activeAccount == null && accounts.size() > 1;
 
         return AuthResponse.builder()
                 .token(token)
@@ -175,6 +178,12 @@ public class AccountService {
     public AuthResponse createAccount(AuthPrincipal principal, AccountType type) {
         User user = userRepository.findById(principal.userId())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        if (user.isAdmin()) {
+            throw new IllegalArgumentException("Administrator cannot create student or tutor accounts");
+        }
+        if (type == AccountType.TUTOR) {
+            throw new IllegalArgumentException("Tutor account requires administrator approval");
+        }
 
         Account createdAccount = createAccount(user.getId(), type);
         Long activeAccountId = principal.activeAccountId();
@@ -191,6 +200,9 @@ public class AccountService {
     public AuthResponse selectAccount(AuthPrincipal principal, AccountType type) {
         User user = userRepository.findById(principal.userId())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        if (user.isAdmin()) {
+            throw new IllegalArgumentException("Administrator does not use accounts");
+        }
 
         Account account = accountRepository.findByUserIdAndType(user.getId(), type)
                 .orElseThrow(() -> new IllegalArgumentException("Account not found"));

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, BookOpen, GraduationCap, Loader2, Star, UserRound } from "lucide-react";
-import { API_BASE_URL, MARKETPLACE_API_BASE_URL, formatErrorMessage, getAuthHeaders, readErrorMessage } from "../../shared/api";
+import { API_BASE_URL, formatErrorMessage, startConversation } from "../../shared/api";
 import { markdownToSafeHtml } from "../../shared/markdown";
 import { ThemeToggle } from "../../shared/ThemeToggle";
 import { useAuthSession } from "../../shared/useAuthSession";
@@ -157,23 +157,16 @@ export function PublicProfilePage({ accountId }: { accountId: number }) {
       setContactError("Войдите в аккаунт, чтобы написать репетитору");
       return;
     }
+    const activeAccount = session.activeAccount ?? session.accounts.find((account) => account.active) ?? null;
+    if (activeAccount?.type !== "student") {
+      setContactError("Написать репетитору можно только из аккаунта ученика");
+      return;
+    }
 
     setIsContacting(true);
     setContactError(null);
     try {
-      const response = await fetch(`${MARKETPLACE_API_BASE_URL}/conversations/contact`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify({ tutorAccountId: tutorAccount.id }),
-      });
-      if (!response.ok) {
-        throw new Error(await readErrorMessage(response, "Не удалось открыть чат"));
-      }
-
-      const conversation = (await response.json()) as { id: number };
+      const conversation = await startConversation({ targetAccountId: tutorAccount.id, targetType: "TUTOR" });
       navigateTo(`/profile/chat/${conversation.id}`);
     } catch (contactLoadError) {
       setContactError(formatErrorMessage(contactLoadError instanceof Error ? contactLoadError.message : "", "Не удалось открыть чат"));

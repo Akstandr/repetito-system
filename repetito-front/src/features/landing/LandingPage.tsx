@@ -9,6 +9,7 @@ import {
   getAuthHeaders,
   getCookieValue,
   readErrorMessage,
+  startConversation,
 } from "../../shared/api";
 import type { SubjectOption } from "../../shared/api";
 import { ThemeToggle } from "../../shared/ThemeToggle";
@@ -183,6 +184,25 @@ export function LandingPage() {
       setError(formatError(applyError, "Не удалось отправить заявку"));
     } finally {
       setIsApplying(null);
+    }
+  }
+
+  async function messageTutor(card: TutorCardPageResponse["items"][number]) {
+    if (!session?.user) {
+      setAuthMode("login");
+      setAuthOpen(true);
+      setError("Войдите как ученик, чтобы написать репетитору");
+      return;
+    }
+    if (!isStudent) {
+      setError("Написать репетитору можно только из аккаунта ученика");
+      return;
+    }
+    try {
+      const conversation = await startConversation({ targetAccountId: card.tutorAccountId, targetType: "TUTOR" });
+      navigateTo(`/profile/chat/${conversation.id}`);
+    } catch (messageError) {
+      setError(formatError(messageError, "Не удалось открыть чат"));
     }
   }
 
@@ -424,6 +444,7 @@ export function LandingPage() {
               onPrevious={() => void searchCards(cards.page - 1)}
               onNext={() => void searchCards(cards.page + 1)}
               onApply={openApplicationDialog}
+              onMessage={(card) => void messageTutor(card)}
               onOpenCard={(cardId) => navigateTo(`/tutor-cards/${cardId}`)}
               isApplying={isApplying}
               appliedTutorCardIds={appliedTutorCardIds}

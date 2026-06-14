@@ -58,6 +58,23 @@ export function getAuthHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+export async function startConversation(payload: {
+  targetUserId?: number;
+  targetAccountId?: number;
+  targetType: "STUDENT" | "TUTOR" | "USER";
+  initialMessage?: string;
+}) {
+  const response = await fetch(`${MARKETPLACE_API_BASE_URL}/conversations/start`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, "Не удалось открыть чат"));
+  }
+  return (await response.json()) as { id: number };
+}
+
 const ERROR_TRANSLATIONS: Array<[RegExp, string]> = [
   [/bad credentials/i, "Неверный email или пароль"],
   [/user already exists/i, "Пользователь с таким email уже существует"],

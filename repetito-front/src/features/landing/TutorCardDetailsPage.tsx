@@ -8,6 +8,7 @@ import {
   formatErrorMessage,
   getAuthHeaders,
   readErrorMessage,
+  startConversation,
 } from "../../shared/api";
 import type { SubjectOption } from "../../shared/api";
 import { markdownToSafeHtml } from "../../shared/markdown";
@@ -118,6 +119,7 @@ export function TutorCardDetailsPage({ cardId }: { cardId: number }) {
   const [reviews, setReviews] = useState<TutorReview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isApplying, setIsApplying] = useState(false);
+  const [isContacting, setIsContacting] = useState(false);
   const [isApplicationDialogOpen, setIsApplicationDialogOpen] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -286,6 +288,29 @@ export function TutorCardDetailsPage({ cardId }: { cardId: number }) {
       setError(formatError(applyError, "Не удалось отправить заявку"));
     } finally {
       setIsApplying(false);
+    }
+  }
+
+  async function contactTutor() {
+    if (!session?.user) {
+      setAuthMode("login");
+      setAuthOpen(true);
+      setError("Войдите как ученик, чтобы написать репетитору");
+      return;
+    }
+    if (!isStudent || !card) {
+      setError("Написать репетитору можно только из аккаунта ученика");
+      return;
+    }
+    setIsContacting(true);
+    setError(null);
+    try {
+      const conversation = await startConversation({ targetAccountId: card.tutorAccountId, targetType: "TUTOR" });
+      navigateTo(`/profile/chat/${conversation.id}`);
+    } catch (contactError) {
+      setError(formatError(contactError, "Не удалось открыть чат"));
+    } finally {
+      setIsContacting(false);
     }
   }
 
@@ -461,6 +486,14 @@ export function TutorCardDetailsPage({ cardId }: { cardId: number }) {
                   </div>
 
                   <div className="mt-6">
+                    <button
+                      type="button"
+                      onClick={() => void contactTutor()}
+                      disabled={isContacting}
+                      className="mb-3 inline-flex w-full items-center justify-center rounded-xl border border-border px-5 py-3 text-sm font-medium transition hover:bg-secondary disabled:opacity-60"
+                    >
+                      {isContacting ? "Открываем чат..." : "Написать репетитору"}
+                    </button>
                     {hasApplied ? (
                       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
                         Вы уже отправили заявку на эту карточку

@@ -3,6 +3,7 @@ package dev.andrew.repetitobackend.tutorcards.dto;
 import dev.andrew.repetitobackend.accounts.model.TutorProfile;
 import dev.andrew.repetitobackend.tutorcards.model.TutorCard;
 import dev.andrew.repetitobackend.tutorcards.model.TutorCardFormat;
+import dev.andrew.repetitobackend.tutorcards.model.TutorCardModerationStatus;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -18,6 +19,10 @@ public record TutorCardResponse(
         List<Integer> supportedGrades,
         TutorCardFormat format,
         boolean isActive,
+        TutorCardModerationStatus moderationStatus,
+        String rejectionReason,
+        Long reviewedByAdminId,
+        Instant reviewedAt,
         Instant createdAt,
         Instant updatedAt,
         TutorPreview tutor
@@ -37,6 +42,10 @@ public record TutorCardResponse(
                 card.getSupportedGrades().stream().sorted().toList(),
                 card.getFormat(),
                 card.isActive(),
+                card.getModerationStatus(),
+                card.getRejectionReason(),
+                card.getReviewedByAdmin() == null ? null : card.getReviewedByAdmin().getId(),
+                card.getReviewedAt(),
                 card.getCreatedAt(),
                 card.getUpdatedAt(),
                 new TutorPreview(

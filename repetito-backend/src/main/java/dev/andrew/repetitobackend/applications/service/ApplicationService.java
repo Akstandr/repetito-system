@@ -11,7 +11,9 @@ import dev.andrew.repetitobackend.applications.repository.TutorApplicationReposi
 import dev.andrew.repetitobackend.common.security.AuthPrincipal;
 import dev.andrew.repetitobackend.conversations.model.Conversation;
 import dev.andrew.repetitobackend.conversations.repository.ConversationRepository;
+import dev.andrew.repetitobackend.conversations.service.ConversationService;
 import dev.andrew.repetitobackend.tutorcards.model.TutorCard;
+import dev.andrew.repetitobackend.tutorcards.model.TutorCardModerationStatus;
 import dev.andrew.repetitobackend.tutorcards.repository.TutorCardRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,7 @@ public class ApplicationService {
     private final TutorCardRepository tutorCardRepository;
     private final TutorApplicationRepository tutorApplicationRepository;
     private final ConversationRepository conversationRepository;
+    private final ConversationService conversationService;
     private final AccountService accountService;
 
     @Transactional
@@ -33,6 +36,7 @@ public class ApplicationService {
         Account studentAccount = accountService.requireActiveAccount(principal, AccountType.STUDENT);
         TutorCard tutorCard = tutorCardRepository.findById(request.getTutorCardId())
                 .filter(TutorCard::isActive)
+                .filter(card -> card.getModerationStatus() == TutorCardModerationStatus.APPROVED)
                 .orElseThrow(() -> new IllegalArgumentException("Tutor card not found"));
 
         Account tutorAccount = tutorCard.getTutorAccount();
@@ -73,7 +77,7 @@ public class ApplicationService {
         TutorApplication application = tutorApplicationRepository.findByIdAndTutorAccountId(id, tutorAccount.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Application not found"));
         if (application.getStatus() == ApplicationStatus.ACCEPTED) {
-            application.setConversation(ensureConversation(application));
+            application.setConversation(conversationService.ensureConversationForApplication(application));
             return ApplicationResponse.from(application);
         }
         if (application.getStatus() != ApplicationStatus.PENDING && application.getStatus() != ApplicationStatus.SENT) {
@@ -81,7 +85,7 @@ public class ApplicationService {
         }
         application.setStatus(ApplicationStatus.ACCEPTED);
         TutorApplication saved = tutorApplicationRepository.save(application);
-        saved.setConversation(ensureConversation(saved));
+        saved.setConversation(conversationService.ensureConversationForApplication(saved));
         return ApplicationResponse.from(saved);
     }
 
@@ -102,7 +106,7 @@ public class ApplicationService {
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new IllegalArgumentException("Conversation not found"));
         ensureParticipant(conversation, principal);
-        if (conversation.getApplication().getStatus() != ApplicationStatus.ACCEPTED) {
+        if (conversation.getApplication() == null || conversation.getApplication().getStatus() != ApplicationStatus.ACCEPTED) {
             throw new IllegalArgumentException("Application is not accepted");
         }
         return conversation.getApplication();
@@ -121,7 +125,7 @@ public class ApplicationService {
         if (application.getStatus() != ApplicationStatus.ACCEPTED) {
             throw new IllegalArgumentException("Application is not accepted");
         }
-        application.setConversation(ensureConversation(application));
+        application.setConversation(conversationService.ensureConversationForApplication(application));
         return application;
     }
 
@@ -139,19 +143,10 @@ public class ApplicationService {
                 .orElseThrow(() -> new IllegalArgumentException("Application not found"));
     }
 
-    private Conversation ensureConversation(TutorApplication application) {
-        return conversationRepository.findByApplicationId(application.getId())
-                .orElseGet(() -> conversationRepository.save(Conversation.builder()
-                        .application(application)
-                        .studentAccount(application.getStudentAccount())
-                        .tutorAccount(application.getTutorAccount())
-                        .build()));
-    }
-
     private void ensureParticipant(Conversation conversation, AuthPrincipal principal) {
         Account account = accountService.requireActiveAccount(principal);
-        if (!conversation.getStudentAccount().getId().equals(account.getId())
-                && !conversation.getTutorAccount().getId().equals(account.getId())) {
+        if ((conversation.getStudentAccount() == null || !conversation.getStudentAccount().getId().equals(account.getId()))
+                && (conversation.getTutorAccount() == null || !conversation.getTutorAccount().getId().equals(account.getId()))) {
             throw new IllegalArgumentException("Conversation not found");
         }
     }

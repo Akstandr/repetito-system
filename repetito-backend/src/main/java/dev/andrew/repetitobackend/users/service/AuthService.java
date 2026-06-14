@@ -52,6 +52,10 @@ public class AuthService {
             throw new BadCredentialsException("Invalid credentials");
         }
 
+        if (user.isAdmin()) {
+            return accountService.buildResponse(user, null, jwtService.generateSessionToken(user));
+        }
+
         var accounts = accountRepository.findByUserIdOrderByCreatedAtAsc(user.getId());
         if (accounts.size() == 1) {
             Account account = accounts.get(0);
