@@ -4,6 +4,8 @@ import dev.andrew.repetitobackend.applications.model.TutorApplication;
 import dev.andrew.repetitobackend.applications.model.ApplicationStatus;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -73,4 +75,20 @@ public interface TutorApplicationRepository extends JpaRepository<TutorApplicati
     boolean existsByTutorCardId(Long tutorCardId);
 
     boolean existsByStudentAccountIdAndTutorAccountIdAndStatus(Long studentAccountId, Long tutorAccountId, ApplicationStatus status);
+
+    long countByStudentAccountId(Long studentAccountId);
+
+    long countByTutorAccountId(Long tutorAccountId);
+
+    @Query("select count(distinct application.tutorAccount.id) from TutorApplication application where application.studentAccount.id = :accountId and application.status = :status")
+    long countDistinctTutors(@Param("accountId") Long accountId, @Param("status") ApplicationStatus status);
+
+    @Query("select count(distinct application.studentAccount.id) from TutorApplication application where application.tutorAccount.id = :accountId and application.status = :status")
+    long countDistinctStudents(@Param("accountId") Long accountId, @Param("status") ApplicationStatus status);
+
+    @EntityGraph(attributePaths = {"studentAccount", "studentAccount.user", "tutorCard"})
+    List<TutorApplication> findByTutorAccountIdAndStatusOrderByUpdatedAtDesc(Long tutorAccountId, ApplicationStatus status);
+
+    @EntityGraph(attributePaths = {"tutorAccount", "tutorAccount.user", "tutorCard"})
+    List<TutorApplication> findByStudentAccountIdAndStatusOrderByUpdatedAtDesc(Long studentAccountId, ApplicationStatus status);
 }

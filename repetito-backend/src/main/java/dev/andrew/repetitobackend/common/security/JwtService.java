@@ -48,6 +48,11 @@ public class JwtService {
         return extractClaims(token).getSubject();
     }
 
+    public boolean extractAdmin(String token) {
+        Boolean value = extractClaims(token).get("admin", Boolean.class);
+        return Boolean.TRUE.equals(value);
+    }
+
     public boolean isTokenValid(String token) {
         try {
             return extractClaims(token).getExpiration().after(new Date());
@@ -63,6 +68,7 @@ public class JwtService {
                 .claim("email", user.getEmail())
                 .claim("firstName", user.getFirstName())
                 .claim("lastName", user.getLastName())
+                .claim("admin", user.isAdmin())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expiration));
 

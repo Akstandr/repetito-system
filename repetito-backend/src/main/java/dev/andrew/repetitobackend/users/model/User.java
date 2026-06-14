@@ -30,6 +30,10 @@ public class User {
     @Column(nullable = false)
     private String lastName;
 
+    @Column(name = "is_admin", nullable = false)
+    @Builder.Default
+    private boolean admin = false;
+
     @Column(nullable = false)
     private Instant createdAt;
 

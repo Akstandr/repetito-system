@@ -22,16 +22,12 @@ public class AuthController {
     private final AccountService accountService;
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(
-            @Valid @RequestBody RegisterRequest request
-    ) {
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(authService.register(request));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(
-            @Valid @RequestBody LoginRequest request
-    ) {
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
 
@@ -41,10 +37,7 @@ public class AuthController {
     }
 
     @PostMapping("/select-account")
-    public ResponseEntity<AuthResponse> selectAccount(
-            Authentication authentication,
-            @Valid @RequestBody SelectAccountRequest request
-    ) {
+    public ResponseEntity<AuthResponse> selectAccount(Authentication authentication, @Valid @RequestBody SelectAccountRequest request) {
         return ResponseEntity.ok(accountService.selectAccount((AuthPrincipal) authentication.getPrincipal(), request.getType()));
     }
 }

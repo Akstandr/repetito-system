@@ -9,6 +9,7 @@ public record UserResponse(
         String email,
         String firstName,
         String lastName,
+        boolean isAdmin,
         Instant createdAt
 ) {
     public static UserResponse from(User user) {
@@ -17,6 +18,7 @@ public record UserResponse(
                 user.getEmail(),
                 user.getFirstName(),
                 user.getLastName(),
+                user.isAdmin(),
                 user.getCreatedAt()
         );
     }

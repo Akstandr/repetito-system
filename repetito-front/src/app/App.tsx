@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { LandingPage, PublicProfilePage, PublicProfileSearchPage, TutorCardDetailsPage } from "../features/landing";
 import { AccountPage } from "../features/account/AccountPage";
+import { AdminPage } from "../features/admin";
 
 function getCurrentPath() {
   return window.location.pathname;
@@ -56,6 +57,10 @@ export default function App() {
 
   if (path === "/search") {
     return <PublicProfileSearchPage />;
+  }
+
+  if (path === "/admin") {
+    return <AdminPage />;
   }
 
   if (

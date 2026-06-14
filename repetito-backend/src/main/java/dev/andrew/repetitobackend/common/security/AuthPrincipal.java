@@ -8,7 +8,8 @@ public record AuthPrincipal(
         AccountType accountType,
         String email,
         String firstName,
-        String lastName
+        String lastName,
+        boolean admin
 ) {
     public boolean hasActiveAccount() {
         return activeAccountId != null && accountType != null;

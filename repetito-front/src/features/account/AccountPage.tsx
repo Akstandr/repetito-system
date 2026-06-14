@@ -1641,17 +1641,29 @@ export function AccountPage({ initialConversationId = null, routePath }: Account
                                         Если профиль включен, другие пользователи смогут найти его на главной странице и открыть по ссылке.
                                     </p>
                                 </div>
-                                <button
-                                    type="button"
-                                    disabled={isBusy}
-                                    onClick={() => void updatePublicProfile(!activeAccount.publicProfile)}
-                                    className={`inline-flex min-w-36 items-center justify-center rounded-xl px-4 py-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${activeAccount.publicProfile
-                                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                                        : "border border-border bg-card text-muted-foreground hover:bg-secondary"
-                                        }`}
-                                >
-                                    {activeAccount.publicProfile ? "Публичный" : "Скрыт"}
-                                </button>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xs text-muted-foreground">Закрытый</span>
+                                    <button
+                                        type="button"
+                                        role="switch"
+                                        aria-checked={activeAccount.publicProfile}
+                                        aria-label="Переключить публичность профиля"
+                                        disabled={isBusy}
+                                        onClick={() => void updatePublicProfile(!activeAccount.publicProfile)}
+                                        className={`relative h-8 w-14 rounded-full border border-border transition disabled:cursor-not-allowed disabled:opacity-60 ${activeAccount.publicProfile
+                                            ? "bg-primary"
+                                            : "bg-input-background"
+                                            }`}
+                                    >
+                                        <span
+                                            className={`absolute left-0 top-1 h-6 w-6 rounded-full bg-card shadow-sm transition-transform ${activeAccount.publicProfile ? "translate-x-6" : "translate-x-1"
+                                                }`}
+                                        />
+                                    </button>
+                                    <span className={`text-xs font-medium ${activeAccount.publicProfile ? "text-primary" : "text-muted-foreground"}`}>
+                                        {activeAccount.publicProfile ? "Публичный" : "Закрытый"}
+                                    </span>
+                                </div>
                             </div>
 
                             <fieldset disabled={!isProfileEditing || isBusy} className={!isProfileEditing ? "opacity-80" : ""}>

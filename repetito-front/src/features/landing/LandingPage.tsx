@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState } from "react";
-import { GraduationCap, Loader2, LogOut, Menu, X } from "lucide-react";
+import { GraduationCap, Loader2, LogOut, Menu, ShieldCheck, X } from "lucide-react";
 import { AuthModal } from "../auth/AuthModal";
 import {
   DEFAULT_SUBJECT_OPTIONS,
@@ -254,6 +254,18 @@ export function LandingPage() {
 
             {session?.user ? (
               <>
+                {session.user.isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => navigateTo("/admin")}
+                    aria-label="Открыть админ-панель"
+                    title="Админ-панель"
+                    className="inline-flex h-9 items-center gap-2 rounded-xl border border-border px-2.5 text-sm transition hover:bg-secondary sm:h-auto sm:px-3 sm:py-2"
+                  >
+                    <ShieldCheck size={16} />
+                    <span className="hidden sm:inline">Админ-панель</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => navigateTo("/account")}

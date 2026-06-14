@@ -55,4 +55,8 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
     boolean existsByApplicationId(Long applicationId);
 
     boolean existsByApplication_TutorCard_Id(Long tutorCardId);
+
+    long countByStudentAccountId(Long studentAccountId);
+
+    long countByTutorAccountId(Long tutorAccountId);
 }
